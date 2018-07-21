@@ -1046,6 +1046,16 @@ declare class Hash {
     verify(value: string, hash: string): Promise<boolean>
 }
 
+type Loglevels = {
+    emerg   : 0,
+    alert   : 1,
+    crit    : 2,
+    error   : 3,
+    warning : 4,
+    notice  : 5,
+    info    : 6,
+    debug   : 7,
+};
 type LogLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 /**
@@ -1059,7 +1069,23 @@ type LogLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
  * @constructor
  */
 declare class Logger {
-    level: LogLevel
+    /**
+   * Hash of log levels used by Logger
+   * internally.
+   *
+   * @attribute levels
+   *
+   * @return {Object}
+   */
+    levels: Loglevels;
+    /**
+   * Returns the current level for the driver
+   *
+   * @attribute level
+   *
+   * @return {String}
+   */
+    level: string;
     log(level: LogLevel, message: string, ...options: any[]): void
     debug(message: string, ...options: any[]): void
     info(message: string, ...options: any[]): void
@@ -4749,8 +4775,34 @@ declare namespace Validator {
         _errorMessages  : Array<any>;
     }
 
+    interface Formatter {
+        /**
+         * Stores the error to errors stack
+         *
+         * @method addError
+         *
+         * @param {Object} error
+         * @param {String} field
+         * @param {String} validation
+         * @param {Array} args
+         *
+         * @return {void}
+         */
+        addError(error: Object, field: String, validation: String, args?: Array<any>): void;
+
+        /**
+         * Returns an array of errors
+         *
+         * @method toJSON
+         *
+         * @return {Array}
+         */
+        toJSON(): Array<any>
+    }
+
     type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Object) => Validation;
     type Sanitize = (data: Object, rules: Object) => Object;
+    type Formatters = { Vanilla: Validator.Formatter, JsonApi: Validator.Formatter };
     type ValidatorHandler = <T>(data: Object, field: string, message: string, args: Array<T>, get: (obj: Object, path: string) => any) => Promise<void>;
 
     type Is = (data: string | number) => boolean;
@@ -4832,7 +4884,7 @@ declare class Validator {
 
     is          : Validator.IsRaw
     sanitizor   : Validator.SanitizorRaw
-    formatters  : Object
+    formatters  : Validator.Formatters
     configure(options: Object): void
     extend(rule : string, fn : Validator.ValidatorHandler) : void
 }
