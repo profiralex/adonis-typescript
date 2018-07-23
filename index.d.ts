@@ -2307,15 +2307,36 @@ declare namespace Http {
     interface Context extends Macroable {
         new (req : Object, res : Object): Context;
         
-        auth       : WorkInProgress
-        params     : WorkInProgress
-        req        : http.IncomingMessage
+        auth       : WorkInProgress;
+        params     : WorkInProgress;
+        req        : http.IncomingMessage;
         res        : http.ServerResponse;
-        request    : Http.Request
-        response   : Http.Response
+        request    : Http.Request;
+        response   : Http.Response;
         session    : Session;
         subdomains : WorkInProgress;
-        view       : View
+        view       : View;
+
+        /**
+         * Hydrate the context constructor
+         *
+         * @method hydrate
+         *
+         * @return {void}
+         */
+        hydrate(): void;
+
+        /**
+         * Define onReady callbacks to be executed
+         * once the request context is instantiated
+         *
+         * @method onReady
+         *
+         * @param  {Function} fn
+         *
+         * @chainable
+         */
+        onReady(fn: Handler): this;
     }
 
     type Handler = (ctx: Context) => any
@@ -10352,6 +10373,295 @@ interface Suite {
     trait(action : Function | String | Object, options? : Object): void;
 }
 
+
+/**
+ * Antl is public passing API to format values
+ * and messages for a given locale
+ * 
+ * @class Antl
+ * @constructor
+ * 
+ * @param {String} locale  The local for which values to be formatted
+ * @param {Object} messages An object of messages. It should be loaded via a loader.
+ */
+interface Antl {
+		
+	/**
+	 * 
+	 * @param locale 
+	 * @param messages 
+	 */
+	new (locale : String, messages : Object): Antl;
+		
+	/**
+	 * Switch to a different locale at runtime
+	 * 
+	 * @method switchLocale
+	 * 
+	 * @param {String} locale
+	 * 
+	 * @return {void}
+	 * @param locale 
+	 * @return  
+	 */
+	switchLocale(locale : string): void;
+		
+	/**
+	 * Same as @ref('Antl.switchLocale') but instead
+	 * returns the reference to `this` for chaining
+	 * 
+	 * @method forLocale
+	 * 
+	 * @param {any} locale
+	 * 
+	 * @chainable
+	 * @param locale 
+	 * @return  
+	 */
+	forLocale(locale : string): this;
+		
+		/**
+	 * Formats a number using Intl.NumberFormat. Visit
+	 * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NumberFormat to
+	 * learn more about configuration options.
+	 * 
+	 * @method formatNumber
+	 * 
+	 * @param  {Number}     value
+	 * @param  {Object}     [options]
+	 * @param  {String}     [fallback] Fallback text when actual value is missing
+	 * 
+	 * @return {String}
+	 * 
+	 * @example
+	 * ```js
+	 * formatter
+	 *   .formatNumber(1000, { style: 'currency', currency: 'usd' })
+	 * ```
+	 * @param value 
+	 * @param options? 
+	 * @param fallback? 
+	 * @return  
+	 */
+	formatNumber(value : number, options? : Object, fallback? : string): string;
+		
+	/**
+	 * Formats the date as per Intl.DateTimeFormat. Learn more about it
+	 * at https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat
+	 * 
+	 * @method formatDate
+	 * 
+	 * @param  {String|Date|Number}   value
+	 * @param  {Object}               options
+	 * @param  {String}               fallback
+	 * 
+	 * @return {String}
+	 * 
+	 * @example
+	 * ```js
+	 * formatter
+	 *   .formatDate(new Date())
+	 * ```
+	 * @param value 
+	 * @param options 
+	 * @param fallback 
+	 * @return  
+	 */
+	formatDate(value : String|Date|Number, options : Object, fallback : string): string;
+		
+	/**
+	 * Formats the date relative from the current timestamp. It is
+	 * based on https://github.com/yahoo/intl-relativeformat.
+	 * 
+	 * @method formatRelative
+	 * 
+	 * @param  {Date|String|Number}       value
+	 * @param  {Object}                   [options]
+	 * @param  {String}                   [fallback]
+	 * 
+	 * @return {String}
+	 * @param value 
+	 * @param options? 
+	 * @param fallback? 
+	 * @return  
+	 */
+	formatRelative(value : String|Date|Number, options? : Object, fallback? : string): string;
+		
+	/**
+	 * Formats the number as a currency
+	 * 
+	 * @method formatAmount
+	 * 
+	 * @param  {Number}     value
+	 * @param  {String}     currency
+	 * @param  {Object}     [options]
+	 * @param  {String}     [fallback]
+	 * 
+	 * @return {String}
+	 * 
+	 * @throws {InvalidArgumentException} If currency is missing
+	 * @param value 
+	 * @param currency 
+	 * @param options? 
+	 * @param fallback? 
+	 * @return  
+	 */
+	formatAmount(value : number, currency : string, options? : Object, fallback? : string): string;
+		
+	/**
+	 * Formats a message using ICU messaging
+	 * syntax
+	 * 
+	 * @method formatMessage
+	 * 
+	 * @param  {String}            message
+	 * @param  {Object}            values
+	 * @param  {Object|Array}      [formats]
+	 * 
+	 * @return {String}
+	 * 
+	 * @example
+	 * ```js
+	 * formatter
+	 *   .formatMessage('Hello { username }', { username: 'virk' })
+	 * ```
+	 * 
+	 * @example
+	 * ```js
+	 * formatter
+	 *   .formatMessage('Total { total, number, usd }', { total: 20 }, [formats.pass('usd', 'number')])
+	 * ```
+	 * @param message 
+	 * @param values 
+	 * @param formats? 
+	 * @return  
+	 */
+	formatMessage(message : string, values : Object, formats? : Object | Array<any>): string;
+		
+	/**
+	 * Returns raw message for a given key
+	 * 
+	 * @method get
+	 * 
+	 * @param  {String} key
+	 * @param  {Mixed}  [defaultValue = null]
+	 * 
+	 * @return {Mixed}
+	 * @param key 
+	 * @param defaultValue? 
+	 * @return  
+	 */
+	get(key : string, defaultValue? : any): any;
+		
+	/**
+	 * Returns an array of locales available. This
+	 * list is based of the messages defined.
+	 * 
+	 * @method availableLocales
+	 * 
+	 * @return {Array}
+	 * @return  
+	 */
+	availableLocales(): Array<any>;
+		
+	/**
+	 * Returns a list of strings for the active
+	 * locale and an optionally selected group.
+	 * 
+	 * @method list
+	 * 
+	 * @param  {String} [group]
+	 * 
+	 * @return {Object}
+	 * @param group? 
+	 * @return  
+	 */
+	list(group? : string): Object;
+		
+	/**
+	 * Returns a flat list of strings for the active
+	 * locale and optionally for a group
+	 * 
+	 * @method flatList
+	 * 
+	 * @param  {String} [group]
+	 * 
+	 * @return {Object}
+	 * @param group? 
+	 * @return  
+	 */
+	flatList(group? : string): Object;
+}
+
+/**
+ * Formats is a store to set and get custom
+ * formats.
+ * 
+ * @class Formats
+ * @constructor
+ */
+interface Formats {
+	/**
+	 * Reset registered format
+	 * 
+	 * @method clear
+	 * 
+	 * @return {void}
+	 * @return  
+	 */
+	clear(): void;
+		
+	/**
+	 * Add a new custom format
+	 * 
+	 * @method add
+	 * 
+	 * @param  {String} name
+	 * @param  {Object} options
+	 * 
+	 * @example
+	 * ```js
+	 * format.add('amount', { style: 'currency' })
+	 * ```
+	 * 
+	 * @chainable
+	 * @param name 
+	 * @param options 
+	 * @return  
+	 */
+	add(name : string, options : Object): this;
+		
+	/**
+	 * Get custom format by name
+	 * 
+	 * @method get
+	 * 
+	 * @param  {String} name
+	 * 
+	 * @return {Object}
+	 * @param name 
+	 * @return  
+	 */
+	get(name : string): Object;
+		
+	/**
+	 * Returns an object which can be passed to `formatMessage`
+	 * in order to pass custom formats.
+	 * 
+	 * @method pass
+	 * 
+	 * @param  {String} format
+	 * @param  {String} type
+	 * 
+	 * @return {Object}
+	 * @param format 
+	 * @param type 
+	 * @return  
+	 */
+	pass(format : string, type : string): Object;
+}
+
+
 declare namespace AdonisNamespaces {
     type Command = 'Command' | 'Adonis/Src/Command'
     type Config = 'Config' | 'Adonis/Src/Config'
@@ -10382,7 +10692,8 @@ declare namespace AdonisNamespaces {
     type Redis = 'Redis' | 'Adonis/Addons/Redis'
     type Drive = 'Drive' | 'Adonis/Addons/Drive'
     type Test = 'Suite' | 'Test/Suite'
-
+    type Antl = 'Antl' | 'Adonis/Addons/Antl'
+    type AntlFormats = 'Antl/Formats' | 'Adonis/Addons/Antl/Formats'
 }
 
 declare global {
@@ -10414,7 +10725,9 @@ declare global {
     function use(namespace: AdonisNamespaces.Response): Http.Response
     function use(namespace: AdonisNamespaces.BaseExceptionHandler): BaseExceptionHandler
     function use(namespace: AdonisNamespaces.Logger): Logger
-
+    function use(namespace: AdonisNamespaces.Antl): Antl
+    function use(namespace: AdonisNamespaces.AntlFormats): Formats
+    
 }
 
 declare global {
@@ -10446,6 +10759,8 @@ declare global {
     function make(namespace: AdonisNamespaces.Response): Http.Response
     function make(namespace: AdonisNamespaces.BaseExceptionHandler): BaseExceptionHandler
     function make(namespace: AdonisNamespaces.Logger): Logger
+    function make(namespace: AdonisNamespaces.Antl): Antl
+    function make(namespace: AdonisNamespaces.AntlFormats): Formats
 
     const iocResolver : Fold.ResolverManager;
 }
