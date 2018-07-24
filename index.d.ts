@@ -1194,6 +1194,18 @@ declare namespace Http {
             * @return  
             */
         _isBadSafari(): boolean;
+
+        /**
+         * Mutate request body, this method will
+         * mutate the `all` object as well
+         *
+         * @method body
+         *
+         * @param  {Object} body
+         *
+         * @return {Object}
+         */
+        body: Object;
             
         /**
             * Returns query params from HTTP url.
@@ -1754,6 +1766,12 @@ declare namespace Http {
             * @return  
             */
         format(): string;
+
+        /**
+         * Request macro to access a file from the uploaded
+         * files.
+         */
+        file(name: string, options: {}): Object;
     }
 
     /**
@@ -3334,7 +3352,7 @@ declare namespace Auth {
     }
 
     type HeaderFn = (key: string, value: string) => void;
-    type SessionFn = HeaderFn;
+    type SessionFn = (name: string, value: string) => void
 }
 type Auth = Auth.ApiScheme & Auth.BasicAuthScheme & Auth.JwtScheme & Auth.SessionScheme;
 
