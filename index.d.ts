@@ -2307,7 +2307,7 @@ declare namespace Http {
     interface Context extends Macroable {
         new (req : Object, res : Object): Context;
         
-        auth       : WorkInProgress;
+        auth       : Auth;
         params     : WorkInProgress;
         req        : http.IncomingMessage;
         res        : http.ServerResponse;
@@ -2342,26 +2342,1022 @@ declare namespace Http {
     type Handler = (ctx: Context) => any
 }
 
+declare namespace Auth {
+    /**
+     * The base scheme is supposed to be extend by other
+     * schemes.
+     * 
+     * @class BaseScheme
+     * @constructor
+     * @module Lucid
+     */
+    interface BaseScheme {
+        /**
+         * The uid field name. Reads the `uid` from the config object
+         * 
+         * @attribute uidField
+         * @readOnly
+         * @type {String}
+         */
+        uidField : string;
+            
+        /**
+         * The password field name. Reads the `password` from the config object
+         * 
+         * @attribute passwordField
+         * @readOnly
+         * @type {String}
+         */
+        passwordField : string;
+            
+        /**
+         * The scheme field name. Reads the `scheme` from the config object
+         * 
+         * @attribute scheme
+         * @readOnly
+         * @type {String}
+         */
+        scheme : string;
+            
+        /**
+         * The primary key to be used to fetch the unique identifier value
+         * for the current user.
+         * 
+         * @attribute primaryKey
+         * @readOnly
+         * @type {String}
+         */
+        primaryKey : string;
+
+        /**
+         * The unique identifier value for the current user. The value relies on
+         * primaryKey.
+         *
+         * @attribute primaryKeyValue
+         * @readOnly
+         * @type {String|Number}
+         */
+        primaryKeyValue : string | null;
+            
+        /**
+         * Reference to the current user instance. The output value relies
+         * on the serializer in use.
+         *
+         * @attribute user
+         * @return {Mixed}
+         */
+        user : any;
+
+
+        /**
+         * Set the config and the serializer instance on scheme. This method
+         * is invoked by the `Auth` facade to feed the current config and
+         * serializer in use.
+         * 
+         * @method setOptions
+         * 
+         * @param  {Object}   config
+         * @param  {Object}   serializerInstance
+         * 
+         * @chainable
+         * @param config 
+         * @param serializerInstance 
+         * @return  
+         */
+        setOptions(config : Object, serializerInstance : Object): this;
+            
+        /**
+         * Set http context on the scheme instance. This
+         * method is called automatically by `Auth`
+         * facade.
+         * 
+         * @method setCtx
+         * 
+         * @param  {Object}   ctx
+         * 
+         * @chainable
+         * @param ctx 
+         * @return  
+         */
+        setCtx(ctx : Object): this;
+            
+        /**
+         * Attach a callback to add runtime constraints
+         * to the query builder.
+         * 
+         * @method query
+         * 
+         * @param  {Function} callback
+         * 
+         * @chainable
+         * 
+         * @example
+         * ```js
+         * auth.query((builder) => {
+         *   builder.status('active')
+         * }).attempt()
+         * ```
+         * @param callback 
+         * @return  
+         */
+        query(callback : Function): this;
+            
+        /**
+         * Validates the user credentials.
+         * 
+         * This method will never login the user.
+         * 
+         * @method validate
+         * @async
+         * 
+         * @param  {String}  uid
+         * @param  {String}  password
+         * @param  {Boolean} [returnUser = false]
+         * 
+         * @return {Object|Boolean} - User object is returned when `returnUser` is set to true.
+         * 
+         * @throws {UserNotFoundException}     If unable to find user with uid
+         * @throws {PasswordMisMatchException} If password mismatches
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.validate(username, password)
+         * } catch (error) {
+         *   // Invalid credentials
+         * }
+         * ```
+         * @param uid 
+         * @param password 
+         * @param returnUser? 
+         * @return  
+         */
+        validate(uid : string, password : string, returnUser? : boolean): Promise<boolean>;	
+            
+        /**
+         *   * Returns the user logged in for the current request. This method will
+         *   * call the `check` method internally.
+         *   *
+         *   * @method getUser
+         *   * @async
+         *   *
+         *   * @return {Object}
+         *   *
+         *   * @example
+         *   * ```js
+         * *   await auth.getUser()
+         *   * ```
+         * @return  
+         */
+        getUser(): Promise<Object>;
+            
+        /**
+         * Returns the value of authorization header
+         * or request payload token key value.
+         * 
+         * This method will read the value of `Authorization` header, falling
+         * back to `token` input field.
+         * 
+         * @method getAuthHeader
+         * 
+         * @return {String|Null}
+         * @return  
+         */
+        getAuthHeader(): string | null;
+            
+        /**
+         * Raises UserNotFoundException exception and pass required data to it
+         * 
+         * @method missingUserFor
+         * 
+         * @param  {String|Number}    uidValue
+         * @param  {String}           [uid=this._config.uid]
+         * @param  {String}           [password=this._config.password]
+         * 
+         * @return {UserNotFoundException}
+         * @param uidValue 
+         * @param uid? 
+         * @param password? 
+         * @return  
+         */
+        missingUserFor(uidValue : string | number, uid? : string, password? : string): any;
+            
+        /**
+         * Raises PasswordMisMatchException exception and pass required data to it
+         * 
+         * @method invalidPassword
+         * 
+         * @param  {String}        message
+         * @param  {String}        [password=this._config.password]
+         * 
+         * @return {PasswordMisMatchException}
+         * @param password? 
+         * @return  
+         */
+        invalidPassword(password? : string): any;
+    }
+
+    /**
+     * This scheme is extended by Jwt and API scheme, to share
+     * common functionality.
+     * 
+     * @constructor
+     * @param {Encryption} Encryption
+     */
+    interface BaseTokenScheme extends BaseScheme {
+            
+        /**
+         * 
+         * @param Encryption 
+         */
+        new (Encryption : Encryption): BaseTokenScheme;
+            
+        /**
+         * Revokes ( all/an array of multiple ) the tokens for currently logged in user.
+         * 
+         * @method revokeTokens
+         * 
+         * @param  {Array}              [tokens]
+         * @param  {Boolean}            [deleteInstead = false]
+         * 
+         * @return {Number}             Number of affected database rows
+         * 
+         * @example
+         * ```js
+         * await auth.revokeTokens()
+         * ```
+         * 
+         * Revoke selected tokens
+         * ```js
+         * await auth.revokeTokens(['token1', 'token2'])
+         * ```
+         * 
+         * Delete instead of just revoking them
+         * ```js
+         * await auth.revokeTokens(null, true)
+         * ```
+         * @param tokens? 
+         * @param deleteInstead? 
+         * @return  
+         */
+        revokeTokens(tokens? : Array<string> | null, deleteInstead? : boolean): Promise<number>;
+            
+        /**
+         * Revokes ( all/an array of multiple ) the tokens for a given user.
+         * 
+         * @method revokeTokensForUser
+         * 
+         * @param  {User|Object}        user
+         * @param  {Array}              [tokens]
+         * @param  {Boolean}            [deleteInstead = false]
+         * 
+         * @return {Number}             Number of affected database rows
+         * 
+         * @example
+         * ```js
+         * const user = await User.find(1)
+         * await auth.revokeTokensForUser(user)
+         * ```
+         * 
+         * Revoke selected tokens
+         * ```js
+         * const user = await User.find(1)
+         * await auth.revokeTokensForUser(user, ['token1', 'token2'])
+         * ```
+         * 
+         * Delete instead of just revoking them
+         * ```js
+         * const user = await User.find(1)
+         * await auth.revokeTokensForUser(user, null, true)
+         * ```
+         * @param user 
+         * @param tokens? 
+         * @param deleteInstead? 
+         * @return  
+         */
+        revokeTokensForUser(user : any, tokens? : Array<string> | null, deleteInstead? : boolean): Promise<number>;
+            
+        /**
+         * Lists all refresh tokens for currently logged in user.
+         * 
+         * @method listTokens
+         * @async
+         * 
+         * @return {Array}
+         * @return  
+         */
+        listTokens(): Promise<Array<Object>>;
+    }
+
+    /**
+     * This scheme allows to make use of Github style personal API tokens
+     * to authenticate a user.
+     * 
+     * The tokens for a give user are stored inside the database and user sends
+     * a token inside the `Authorization` header as following.
+     * 
+     * ```
+     * Authorization=Bearer TOKEN
+     * ```
+     * 
+     * ### Note
+     * Token will be encrypted using `EncryptionProvider` before sending it to the user.
+     * 
+     * @class ApiScheme
+     * @extends BaseScheme
+     */
+    interface ApiScheme extends BaseTokenScheme {
+        /**
+         * Attempt to valid the user credentials and then
+         * generates a new token for it.
+         * 
+         * This method invokes the `generate` method by passing
+         * the user found with given credentials.
+         * 
+         * @method attempt
+         * @async
+         * 
+         * @param  {String} uid
+         * @param  {String} password
+         * 
+         * @return {Object}
+         * 
+         * @example
+         * ```js
+         * try {
+         *   const token = auth.attempt(username, password)
+         * } catch (error) {
+         *   // Invalid credentials
+         * }
+         * ```
+         * @param uid 
+         * @param password 
+         * @return  
+         */
+        attempt(uid : string, password : string): Promise<Object>;
+            
+        /**
+         * Generates a personal API token for a user. The user payload must
+         * be valid as per the serializer in use.
+         * 
+         * @method generate
+         * @async
+         * 
+         * @param  {Object} user
+         * 
+         * @return {Object}
+         * - `{ type: 'bearer', token: 'xxxxxxxx' }`
+         * 
+         * @example
+         * ```js
+         * try {
+         *   const user = await User.find(1)
+         *   const token = await auth.generate(user)
+         * } catch (error) {
+         *   // Unexpected error
+         * }
+         * ```
+         * @param user 
+         * @return  
+         */
+        generate(user : Object): Promise<Object>;
+            
+        /**
+         * Validates the API token by reading it from the request
+         * header or using `token` input field as the fallback.
+         * 
+         * Consider user as successfully authenticated, if this
+         * method doesn't throws an exception.
+         * 
+         * @method check
+         * @async
+         * 
+         * @return {void}
+         * 
+         * @throws {InvalidApiToken} If token is missing or is invalid
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.check()
+         * } catch (error) {
+         *   // Invalid token
+         * }
+         * ```
+         * @return  
+         */
+        check(): Promise<boolean>;
+            
+        /**
+         * List all API tokens for a given user
+         * 
+         * @method listTokensForUser
+         * @async
+         * 
+         * @param {Object} user
+         * 
+         * @return {Array}
+         * @param user 
+         * @return  
+         */
+        listTokensForUser(user : Object): Promise<Array<Object>>;
+            
+        /**
+         * Login a user as a client. This method will set the
+         * API token as a header on the request.
+         * 
+         * Adonis testing engine uses this method.
+         * 
+         * @method clientLogin
+         * @async
+         * 
+         * @param  {Function}    headerFn       - Method to set the header
+         * @param  {Function}    sessionFn      - Method to set the session
+         * @param  {Object}      tokenOrUser    - Pass the token or the user directly
+         * 
+         * @return {void}
+         * @param headerFn 
+         * @param sessionFn 
+         * @param tokenOrUser 
+         * @return  
+         */
+        clientLogin(headerFn : HeaderFn, sessionFn : SessionFn, tokenOrUser : Object): Promise<void>;
+    }
+
+    /**
+     * Authenticates a given HTTP request using [Basic Auth](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication) headers.
+     * 
+     * @class BasicAuthScheme
+     * @extends BaseScheme
+     */
+    interface BasicAuthScheme extends BaseScheme {
+        /**
+         * Check whether a user is logged in or
+         * not.
+         * 
+         * Consider user as successfully authenticated, if this
+         * method doesn't throws an exception.
+         * 
+         * @method check
+         * @async
+         * 
+         * @return {Boolean}
+         * 
+         * @throws {InvalidBasicAuthException} If credentails are missing
+         * @throws {UserNotFoundException}     If unable to find user with uid
+         * @throws {PasswordMisMatchException} If password mismatches
+         * 
+         * @example
+         * ```js
+         * try {
+         *  await auth.check()
+         * } catch (error) {
+         *   // Missing or invalid credentials
+         * }
+         * ```
+         * @return  
+         */
+        check(): Promise<boolean>;
+            
+        /**
+         * Login as a user by setting basic auth header
+         * before the request reaches the server.
+         * 
+         * Adonis testing engine uses this method.
+         * 
+         * @param  {Function}    headerFn     - Method to set the header
+         * @param  {Function}    sessionFn    - Method to set the session
+         * @param  {String}      username
+         * @param  {String}      password
+         * 
+         * @method clientLogin
+         * @async
+         * 
+         * @return {void}
+         * @param headerFn 
+         * @param sessionFn 
+         * @param username 
+         * @param password 
+         * @return  
+         */
+        clientLogin(headerFn : HeaderFn, sessionFn : SessionFn, username : string, password : string): Promise<void>;
+    }
+    
+    /**
+     * This scheme allows to make use of JWT tokens to authenticate the user.
+     * 
+     * The user sends a token inside the `Authorization` header as following.
+     * 
+     * ```
+     * Authorization=Bearer JWT-TOKEN
+     * ```
+     * 
+     * ### Note
+     * Token will be encrypted using `EncryptionProvider` before sending it to the user.
+     * 
+     * @class JwtScheme
+     * @extends BaseScheme
+     */
+    interface JwtScheme extends BaseTokenScheme {
+            
+        /**
+         * 
+         * @param Encryption 
+         */
+        new (Encryption : Encryption): JwtScheme;
+            
+        /**
+         * The jwt secret
+         * 
+         * @attribute jwtSecret
+         * @type {String|Null}
+         * @readOnly
+         */
+        jwtSecret : string | null;
+
+        /**
+         * An object of jwt options directly
+         * passed to `jsonwebtoken` library
+         *
+         * @attribute jwtOptions
+         * @type {Object|Null}
+         * @readOnly
+         */
+        jwtOptions : Object | null;
+            
+        /**
+         * Instruct class to generate a refresh token
+         * when generating the jwt token.
+         * 
+         * @method withRefreshToken
+         * 
+         * @chainable
+         * 
+         * @example
+         * ```js
+         * await auth
+         *   .withRefreshToken()
+         *   .generate(user)
+         * 
+         * // or
+         * await auth
+         *   .withRefreshToken()
+         *   .attempt(username, password)
+         * ```
+         * @return  
+         */
+        withRefreshToken(): JwtScheme;
+            
+        /**
+         * When issuing a new JWT token from the refresh token, this class will
+         * re-use the old refresh token.
+         * 
+         * If you want, you can instruct the class to generate a new refresh token
+         * as well and remove the existing one from the DB.
+         * 
+         * @method newRefreshToken
+         * 
+         * @chainable
+         * 
+         * @example
+         * ```js
+         * await auth
+         *   .newRefreshToken()
+         *   .generateForRefreshToken(token)
+         * ```
+         * @return  
+         */
+        newRefreshToken(): JwtScheme;
+            
+        /**
+         * Attempt to valid the user credentials and then generate a JWT token.
+         * 
+         * @method attempt
+         * @async
+         * 
+         * @param  {String} uid
+         * @param  {String} password
+         * @param  {Object|Boolean} [jwtPayload]  Pass true when want to attach user object in the payload
+         *                                        or set a custom object.
+         * @param  {Object}         [jwtOptions]  Passed directly to https://www.npmjs.com/package/jsonwebtoken
+         * 
+         * @return {Object}
+         * - `{ type: 'bearer', token: 'xxxx', refreshToken: 'xxxx' }`
+         * 
+         * @example
+         * ```js
+         * try {
+         *   const token = auth.attempt(username, password)
+         * } catch (error) {
+         *    // Invalid credentials
+         * }
+         * ```
+         * 
+         * Attach user to the JWT payload
+         * ```
+         * auth.attempt(username, password, true)
+         * ```
+         * 
+         * Attach custom data object to the JWT payload
+         * ```
+         * auth.attempt(username, password, { ipAddress: '...' })
+         * ```
+         * @param uid 
+         * @param password 
+         * @param jwtPayload? 
+         * @param jwtOptions? 
+         * @return  
+         */
+        attempt(uid : string, password : string, jwtPayload? : Object | boolean, jwtOptions? : Object): Promise<Object>;
+            
+        /**
+         * Generates a jwt token for a given user. This method doesn't check the existence
+         * of the user in the database.
+         * 
+         * @method generate
+         * @async
+         * 
+         * @param  {Object} user
+         * @param  {Object|Boolean} [jwtPayload]  Pass true when want to attach user object in the payload
+         *                                        or set a custom object.
+         * @param  {Object}         [jwtOptions]  Passed directly to https://www.npmjs.com/package/jsonwebtoken
+         * 
+         * @return {Object}
+         * - `{ type: 'bearer', token: 'xxxx', refreshToken: 'xxxx' }`
+         * 
+         * @throws {RuntimeException} If jwt secret is not defined or user doesn't have a primary key value
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.generate(user)
+         * } catch (error) {
+         *   // Unexpected error
+         * }
+         * ```
+         * 
+         * Attach user to the JWT payload
+         * ```
+         * auth.auth.generate(user, true)
+         * ```
+         * 
+         * Attach custom data object to the JWT payload
+         * ```
+         * auth.generate(user, { ipAddress: '...' })
+         * ```
+         * @param user 
+         * @param jwtPayload? 
+         * @param jwtOptions? 
+         * @return  
+         */
+        generate(user : Object, jwtPayload? : Object | boolean, jwtOptions? : Object): Promise<Object>;
+            
+        /**
+         * Generate a new JWT token using the refresh token.
+         * 
+         * If chained with {{#crossLink "JwtScheme/newRefreshToken"}}{{/crossLink}},
+         * this method will remove the existing refresh token from database and issues a new one.
+         * 
+         * @method generateForRefreshToken
+         * @async
+         * 
+         * @param {String} refreshToken
+         * @param  {Object|Boolean} [jwtPayload]  Pass true when want to attach user object in the payload
+         *                                        or set a custom object.
+         * @param  {Object}         [jwtOptions]  Passed directly to https://www.npmjs.com/package/jsonwebtoken
+         * 
+         * @return {Object}
+         * - `{ type: 'bearer', token: 'xxxx', refreshToken: 'xxxx' }`
+         * 
+         * @example
+         * ```js
+         * await auth.generateForRefreshToken(refreshToken)
+         * 
+         * // create a new refresh token too
+         * await auth
+         *   .newRefreshToken()
+         *   .generateForRefreshToken(refreshToken)
+         * ```
+         * @param refreshToken 
+         * @param jwtPayload? 
+         * @param jwtOptions? 
+         * @return  
+         */
+        generateForRefreshToken(refreshToken : string, jwtPayload? : Object | boolean, jwtOptions? : Object): Promise<Object>;
+            
+        /**
+         * Check if user is authenticated for the current HTTP request or not. This
+         * method will read the token from the `Authorization` header or fallbacks
+         * to the `token` input field.
+         * 
+         * Consider user as successfully authenticated, if this
+         * method doesn't throws an exception.
+         * 
+         * @method check
+         * @async
+         * 
+         * @return {Boolean}
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.check()
+         * } catch (error) {
+         *   // invalid jwt token
+         * }
+         * ```
+         * @return  
+         */
+        check(): Promise<boolean>;
+            
+        /**
+         * List all refresh tokens for a given user.
+         * 
+         * @method listTokensForUser
+         * @async
+         * 
+         * @param  {Object} user
+         * 
+         * @return {Array}
+         * @param user 
+         * @return  
+         */
+        listTokensForUser(user : Object): Promise<Object>;
+            
+        /**
+         * Login a user as a client. This method will set the
+         * JWT token as a header on the request.
+         * 
+         * @param  {Function}    headerFn     - Method to set the header
+         * @param  {Function}    sessionFn    - Method to set the session
+         * @param  {Object}      user         - User to login
+         * @param  {Object}      [jwtOptions] - Passed directly to https://www.npmjs.com/package/jsonwebtoken
+         * 
+         * @method clientLogin
+         * @async
+         * 
+         * @return {void}
+         * @param headerFn 
+         * @param sessionFn 
+         * @param user 
+         * @return  
+         */
+        clientLogin(headerFn : HeaderFn, sessionFn : SessionFn, user : Object): Promise<void>;
+    }
+
+    /**
+     * This scheme allows to make use of `sessions` to authenticate
+     * a user.
+     * 
+     * The authentication is stateful and logged in user `id` is saved inside
+     * cookies to maintain the state across multiple requests.
+     * 
+     * @class SessionScheme
+     * @extends BaseScheme
+     */
+    interface SessionScheme extends BaseScheme {
+            
+        /**
+         * 
+         * @param Config 
+         */
+        new (Config : Object): SessionScheme;
+
+
+        /**
+         * Reference to the value of `sessionKey` inside the config block.
+         * Defaults to `adonis-auth`
+         *
+         * @attribute sessionKey
+         * @readOnly
+         * @return {String}
+         */
+        sessionKey : String;
+
+        /**
+         * Reference to the value of `rememberMeToken` inside the config block.
+         * Defaults to `adonis-remember-token`
+         *
+         * @attribute rememberTokenKey
+         * @readOnly
+         * @return {String}
+         */
+        rememberTokenKey : string;
+   
+        /**
+         * Instruct login API to remember the user for a given
+         * duration. Defaults to `5years`.
+         * 
+         * This method must be called before `login`, `loginViaId` or
+         * `attempt` method.
+         * 
+         * @method remember
+         * 
+         * @param  {String|Number} [duration = 5y]
+         * 
+         * @chainable
+         * 
+         * @example
+         * ```js
+         * await auth.remember(true).login()
+         * 
+         * // custom durating
+         * await auth.remember('2y').login()
+         * ```
+         * @param duration? 
+         * @return  
+         */
+        remember(duration? : string | number): this;
+            
+        /**
+         * Attempt to login the user using `username` and `password`. An
+         * exception will be raised when unable to find the user or
+         * if password mis-matches.
+         * 
+         * @method attempt
+         * @async
+         * 
+         * @param  {String} uid
+         * @param  {String} password
+         * 
+         * @return {Object}
+         * 
+         * @throws {UserNotFoundException}     If unable to find user with uid
+         * @throws {PasswordMisMatchException} If password mismatches
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.attempt(username, password)
+         * } catch (error) {
+         *   // Invalid credentials
+         * }
+         * ```
+         * @param uid 
+         * @param password 
+         * @return  
+         */
+        attempt(uid : string, password : string): Promise<Object>;
+            
+        /**
+         * Login the user using the user object. An exception will be
+         * raised if the same user is already logged in.
+         * 
+         * The exception is raised to improve your code flow, since your code
+         * should never try to login a same user twice.
+         * 
+         * @method login
+         * 
+         * @param  {Object} user
+         * @async
+         * 
+         * @return {Object}
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.login(user)
+         * } catch (error) {
+         *   // Unexpected error
+         * }
+         * ```
+         * @param user 
+         * @return  
+         */
+        login(user : Object): Promise<Object>;
+            
+        /**
+         * Login a user with their unique id.
+         * 
+         * @method loginViaId
+         * @async
+         * 
+         * @param  {Number|String}   id
+         * 
+         * @return {Object}
+         * 
+         * @throws {UserNotFoundException}     If unable to find user with id
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.loginViaId(1)
+         * } catch (error) {
+         *   // Unexpected error
+         * }
+         * ```
+         * @param id 
+         * @return  
+         */
+        loginViaId(id : number | string): Promise<Object>;
+            
+        /**
+         * Logout a user by removing the required cookies. Also remember
+         * me token will be deleted from the tokens table.
+         * 
+         * @method logout
+         * @async
+         * 
+         * @return {void}
+         * 
+         * @example
+         * ```js
+         * await auth.logout()
+         * ```
+         * @return  
+         */
+        logout(): Promise<void>;
+            
+        /**
+         * Check whether the user is logged in or not. If the user session
+         * has been expired, but a valid `rememberMe` token exists, this
+         * method will re-login the user.
+         * 
+         * @method check
+         * @async
+         * 
+         * @return {Boolean}
+         * 
+         * @throws {InvalidSessionException} If session is not valid anymore
+         * 
+         * @example
+         * ```js
+         * try {
+         *   await auth.check()
+         * } catch (error) {
+         *   // user is not logged
+         * }
+         * ```
+         * @return  
+         */
+        check(): Promise<boolean>;
+            
+        /**
+         *   * Same as {{#crossLink "SessionScheme/check:method"}}{{/crossLink}},
+         *   * but doesn't throw any exceptions. This method is useful for
+         *   * routes, where login is optional.
+         *   *
+         *   * @method loginIfCan
+         *   * @async
+         *   *
+         *   * @return {void}
+         *   *
+         *   * @example
+         *   * ```js
+         * *   await auth.loginIfCan()
+         *   * ```
+         * @return  
+         */
+        loginIfCan(): Promise<void>;
+            
+        /**
+         * Login a user as a client. This is required when
+         * you want to set the session on a request that
+         * will reach the Adonis server.
+         * 
+         * Adonis testing engine uses this method.
+         * 
+         * @method clientLogin
+         * @async
+         * 
+         * @param  {Function}    headerFn     - Method to set the header
+         * @param  {Function}    sessionFn    - Method to set the session
+         * @param  {Object}      user         - User to login
+         * 
+         * @return {void}
+         * @param headerFn 
+         * @param sessionFn 
+         * @param user 
+         * @return  
+         */
+        clientLogin(headerFn : HeaderFn, sessionFn : SessionFn, user : Object): Promise<void>;
+    }
+
+    type HeaderFn = (key: string, value: string) => void;
+    type SessionFn = HeaderFn;
+}
+type Auth = Auth.ApiScheme & Auth.BasicAuthScheme & Auth.JwtScheme & Auth.SessionScheme;
+
 /**
-    * This class defines a single route. It supports dynamic
-    * **url segments**, **formats**, **middleware**
-    * and **named routes**.
-    * 
-    * Generally you will get the instance of the by calling
-    * one of the route method on the @ref('RouteManager')
-    * class.
-    * 
-    * Example: `Route.get`, `Route.post`.
-    * 
-    * @class Route
-    * @group Http
-    * @constructor
-    * 
-    * @example
-    * ```
-    * const route = new Route('users', 'HomeController.index', ['GET'])
-    * ```
-    */
+  * This class defines a single route. It supports dynamic
+  * **url segments**, **formats**, **middleware**
+  * and **named routes**.
+  * 
+  * Generally you will get the instance of the by calling
+  * one of the route method on the @ref('RouteManager')
+  * class.
+  * 
+  * Example: `Route.get`, `Route.post`.
+  * 
+  * @class Route
+  * @group Http
+  * @constructor
+  * 
+  * @example
+  * ```
+  * const route = new Route('users', 'HomeController.index', ['GET'])
+  * ```
+  */
 interface Route extends Macroable {
         
     /**
