@@ -1915,7 +1915,7 @@ declare namespace Http {
             * @param args 
             * @return  
             */
-        _writeResponse(method : string, content : string | {}, args : /* Response.prototype._writeResponse2 */ any): any;
+        _writeResponse(method : string, content : any, args : Array<any>): void;
             
         /**
             * Sets the response body. If implicitEnd is set to `false`,
@@ -1936,7 +1936,7 @@ declare namespace Http {
             * @param args 
             * @return  
             */
-        _invoke(method : string, content : string | {}, args : /* Response.prototype._invoke2 */ any): any;
+        _invoke(method : string, content : any, args : Array<any>): void;
             
         /**
             * Set the response status code.
@@ -1949,7 +1949,7 @@ declare namespace Http {
             * @param statusCode 
             * @return  
             */
-        status(statusCode : number): /* Response.prototype.+Response */ any;
+        status(statusCode : number): Response;
             
         /**
             * Set HTTP response header. Resetting same header
@@ -3756,7 +3756,7 @@ declare class Session {
         * @param value 
         * @return  
         */
-    put(key : string, value : number): void;
+    put(key : string, value : any): void;
         
     /**
         * Returns value for a given key
