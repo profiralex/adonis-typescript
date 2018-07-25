@@ -2785,6 +2785,275 @@ declare namespace Http {
         abortUnless(expression : any, status : number, body : any): void;
     }
 
+    class Session {
+        /**
+         * 
+         * @param request 
+         * @param response 
+         * @param driverInstance 
+         * @param Config 
+         */
+        new (request : Request, response : Response, driverInstance : Object, Config : Object): Session;
+
+        /**
+         * A boolean flag telling whether store has been
+         * initiated or not
+         * 
+         * @attribute initiated
+         * 
+         * @return {Boolean}
+         */
+        initiated : boolean;
+
+        /**
+         * Instantiate session object
+         * 
+         * @method instantiate
+         * 
+         * @return {void}
+         * @param freezed 
+         * @return  
+         */
+        instantiate(freezed : boolean): Promise<void>;
+            
+        /**
+         * Saves the final set of session values to the
+         * driver instance
+         * 
+         * @method commit
+         * 
+         * @return {void}
+         * @return  
+         */
+        commit(): Promise<void>;
+
+        /**
+            * Put value to the existing key/value pairs
+            * 
+            * @method put
+            * 
+            * @param  {String} key
+            * @param  {Mixed} value
+            * 
+            * @return {void}
+            * 
+            * @example
+            * ```js
+            * Store.put('name', 'virk')
+            * 
+            * // saving object
+            * Store.put('user', { username: 'virk', age: 27 })
+            * ```
+            * @param key 
+            * @param value 
+            * @return  
+            */
+        put(key : string, value : any): void;
+            
+        /**
+            * Returns value for a given key
+            * 
+            * @method get
+            * 
+            * @param  {String} key
+            * @param  {Mixed} [defaultValue]
+            * 
+            * @return {Mixed}
+            * 
+            * @example
+            * ```js
+            * Store.get('username')
+            * 
+            * // with default value
+            * Store.get('username', 'virk')
+            * ```
+            * @param key 
+            * @param defaultValue? 
+            * @return  
+            */
+        get(key : string, defaultValue? : any): any;
+            
+        /**
+            * Increment value of a key.
+            * 
+            * @method increment
+            * 
+            * @param  {String}  key
+            * @param  {Number}  [steps = 1]
+            * 
+            * @return {void}
+            * 
+            * @throws {Error} If the value are you incrementing is not a number
+            * 
+            * @example
+            * ```js
+            * Store.increment('age')
+            * ```
+            * @param key 
+            * @param steps? 
+            * @return  
+            */
+        increment(key : string, steps? : number): void;
+            
+        /**
+            * Decrement value of a key
+            * 
+            * @method decrement
+            * 
+            * @param  {String}  key
+            * @param  {Number}  [steps = 1]
+            * 
+            * @return {void}
+            * 
+            * @throws {Error} If the value are you decrementing is not a number
+            * 
+            * @example
+            * ```js
+            * Store.decrement('age')
+            * ```
+            * @param key 
+            * @param steps? 
+            * @return  
+            */
+        decrement(key : string, steps? : number): void;
+            
+        /**
+            * Remove key/value pair from store
+            * 
+            * @method forget
+            * 
+            * @param  {String} key
+            * 
+            * @return {void}
+            * 
+            * @example
+            * ```js
+            * Store.forget('username')
+            * Store.get('username') // null
+            * ```
+            * @param key 
+            * @return  
+            */
+        forget(key : string): void;
+            
+        /**
+            * Returns a cloned copy of existing values
+            * 
+            * @method all
+            * 
+            * @return {Object}
+            * @return  
+            */
+        all(): Object;
+            
+        /**
+            * Returns value for a given key and removes
+            * it from the store at the same time
+            * 
+            * @method pull
+            * 
+            * @param  {String} key
+            * @param  {Mixed} [defaultValue]
+            * 
+            * @return {Mixed}
+            * 
+            * @example
+            * ```js
+            * const username = Store.pull('username')
+            * Store.get('username') // null
+            * ```
+            * @param key 
+            * @param defaultValue? 
+            * @return  
+            */
+        pull(key : string, defaultValue? : any): any;
+            
+        /**
+            * Clears the existing values from store
+            * 
+            * @method clear
+            * 
+            * @return {void}
+            * @return  
+            */
+        clear(): void;
+
+        /**
+         * Flash entire request object to the session
+         * 
+         * @method flashAll
+         * 
+         * @chainable
+         * @return  
+         */
+        flashAll(): Session;
+
+        /**
+         * Flash only selected fields from request data to
+         * the session
+         * 
+         * @method flashOnly
+         * 
+         * @param  {...Spread} fields
+         * 
+         * @chainable
+         * @param ...fields 
+         * @return  
+         */
+        flashOnly(...fields : Array<string>): Session;
+
+        /**
+         * Flash request data to the session except
+         * certain fields
+         * 
+         * @method flashExcept
+         * 
+         * @param  {...Spread} fields
+         * 
+         * @chainable
+         * @param ...fields 
+         * @return  
+         */
+        flashExcept(...fields : Array<string>): Session;
+
+        /**
+         * Flash errors to the session
+         * 
+         * @method withErrors
+         * 
+         * @param  {Object}   errors
+         * 
+         * @chainable
+         * @param errors 
+         * @return  
+         */
+        withErrors(errors : Object): Session;
+            
+        /**
+         * Flash data to the session
+         * 
+         * @method flash
+         * 
+         * @param  {Object} data
+         * 
+         * @chainable
+         * @param data 
+         * @return  
+         */
+        flash(data : Object): Session;
+		    
+        /**
+            * Returns json representation of object with
+            * properly stringfied values
+            * 
+            * @method toJSON
+            * 
+            * @return {Object}
+            * @return  
+            */
+        toJSON(): { [key: string]: any };
+    }
+    
     /**
         * An instance of this class is passed to all route handlers
         * and middleware. Also different part of applications
@@ -2817,7 +3086,7 @@ declare namespace Http {
         res        : http.ServerResponse;
         request    : Http.Request;
         response   : Http.Response;
-        session    : Session;
+        session    : Http.Session;
         subdomains : WorkInProgress;
         view       : View;
 
@@ -5135,170 +5404,6 @@ interface Server {
         * 
         */
     _exceptionHandlerNamespace : string;
-}
-
-declare class Session {
-    /**
-        * Put value to the existing key/value pairs
-        * 
-        * @method put
-        * 
-        * @param  {String} key
-        * @param  {Mixed} value
-        * 
-        * @return {void}
-        * 
-        * @example
-        * ```js
-        * Store.put('name', 'virk')
-        * 
-        * // saving object
-        * Store.put('user', { username: 'virk', age: 27 })
-        * ```
-        * @param key 
-        * @param value 
-        * @return  
-        */
-    put(key : string, value : any): void;
-        
-    /**
-        * Returns value for a given key
-        * 
-        * @method get
-        * 
-        * @param  {String} key
-        * @param  {Mixed} [defaultValue]
-        * 
-        * @return {Mixed}
-        * 
-        * @example
-        * ```js
-        * Store.get('username')
-        * 
-        * // with default value
-        * Store.get('username', 'virk')
-        * ```
-        * @param key 
-        * @param defaultValue? 
-        * @return  
-        */
-    get(key : string, defaultValue? : any): any;
-        
-    /**
-        * Increment value of a key.
-        * 
-        * @method increment
-        * 
-        * @param  {String}  key
-        * @param  {Number}  [steps = 1]
-        * 
-        * @return {void}
-        * 
-        * @throws {Error} If the value are you incrementing is not a number
-        * 
-        * @example
-        * ```js
-        * Store.increment('age')
-        * ```
-        * @param key 
-        * @param steps? 
-        * @return  
-        */
-    increment(key : string, steps? : number): void;
-        
-    /**
-        * Decrement value of a key
-        * 
-        * @method decrement
-        * 
-        * @param  {String}  key
-        * @param  {Number}  [steps = 1]
-        * 
-        * @return {void}
-        * 
-        * @throws {Error} If the value are you decrementing is not a number
-        * 
-        * @example
-        * ```js
-        * Store.decrement('age')
-        * ```
-        * @param key 
-        * @param steps? 
-        * @return  
-        */
-    decrement(key : string, steps? : number): void;
-        
-    /**
-        * Remove key/value pair from store
-        * 
-        * @method forget
-        * 
-        * @param  {String} key
-        * 
-        * @return {void}
-        * 
-        * @example
-        * ```js
-        * Store.forget('username')
-        * Store.get('username') // null
-        * ```
-        * @param key 
-        * @return  
-        */
-    forget(key : string): void;
-        
-    /**
-        * Returns a cloned copy of existing values
-        * 
-        * @method all
-        * 
-        * @return {Object}
-        * @return  
-        */
-    all(): Object;
-        
-    /**
-        * Returns value for a given key and removes
-        * it from the store at the same time
-        * 
-        * @method pull
-        * 
-        * @param  {String} key
-        * @param  {Mixed} [defaultValue]
-        * 
-        * @return {Mixed}
-        * 
-        * @example
-        * ```js
-        * const username = Store.pull('username')
-        * Store.get('username') // null
-        * ```
-        * @param key 
-        * @param defaultValue? 
-        * @return  
-        */
-    pull(key : string, defaultValue? : any): any;
-        
-    /**
-        * Clears the existing values from store
-        * 
-        * @method clear
-        * 
-        * @return {void}
-        * @return  
-        */
-    clear(): void;
-        
-    /**
-        * Returns json representation of object with
-        * properly stringfied values
-        * 
-        * @method toJSON
-        * 
-        * @return {Object}
-        * @return  
-        */
-    toJSON(): Object;
 }
 
 /**
