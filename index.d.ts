@@ -1261,6 +1261,15 @@ declare interface File {
 	 * @return  
 	 */
     toJSON(): FileInformation;
+
+    /**
+     * Access to multipart stream
+     *
+     * @attribute stream
+     *
+     * @type {Stream}
+     */
+    stream : stream;
 		
 	/**
 	 * File size
@@ -1297,7 +1306,16 @@ declare interface File {
 	 * 
 	 * @type {String}
 	 */
-	fieldName : string;
+    fieldName : string;
+    
+    /**
+     * Upload file header
+     *
+     * @attribute headers
+     *
+     * @type {Object}
+     */
+    headers : object;
 		
 	/**
 	 * File name after move
@@ -1476,7 +1494,22 @@ declare interface Multipart {
 	 * @param request 
 	 * @param disableJar 
 	 */
-	new (request : Http.Request, disableJar : boolean): Multipart;
+    new (request : Http.Request, disableJar : boolean): Multipart;
+    
+    /**
+     * Storing instance to file jar. Attaching as an helper
+     * so that users using this class directly can use
+     * some helper methods to know the upload status.
+     *
+     * This attribute is optional and disabled by the BodyParser
+     * when bodyparser middleware using the multipart class
+     * for autoProcessing all files.
+     *
+     * @type {FileJar}
+     *
+     * @attribute jar
+     */
+    jar : FileJar;
 		
 	/**
 	 * Executed for each part in stream. Returning
@@ -1491,7 +1524,7 @@ declare interface Multipart {
 	 * @param part 
 	 * @return  
 	 */
-	onPart(part : stream): Promise<void>;
+	onPart(part : stream): Promise<any>;
 		
 	/**
 	 * Process files by going over each part of the stream. Files
@@ -1522,7 +1555,7 @@ declare interface Multipart {
 	 * @param callback 
 	 * @return  
 	 */
-	file(name : string, options : Object, callback : Function): Multipart;
+    file(name: string, options: FileOptions, callback: (file: File) => any): Multipart;
 		
 	/**
 	 * Attach a listener to get fields name/value. Callback
@@ -1537,7 +1570,7 @@ declare interface Multipart {
 	 * @param callback 
 	 * @return  
 	 */
-	field(callback : Function): Multipart;
+    field(callback: (name: string, value: string) => void): Multipart;
 }
 
 declare namespace Http {
@@ -2223,6 +2256,8 @@ declare namespace Http {
          * ```
          */
         file(name: string, options?: FileOptions): File & FileJar;
+
+        multipart: Multipart;
     }
 
     /**
