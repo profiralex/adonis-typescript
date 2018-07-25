@@ -1097,6 +1097,449 @@ declare class Logger {
     emerg(message: string, ...options: any[]): void
 }
 
+interface FileError {
+    fieldName : string,
+    clientName: string,
+    message   : string,
+    type      : string
+}
+
+interface FileInformation {
+    clientName: string,
+    extname   : string,
+    fileName  : string,
+    fieldName : string,
+    tmpPath   : string,
+    headers   : any,
+    size      : number,
+    type      : string,
+    subtype   : string,
+    status    : string,
+    error     : FileError,
+}
+
+interface FileOptions {
+    types    : string[],
+    extnames : string[],
+    size     : string | number,
+}
+
+interface MoveOptions {
+    name ?: string,
+}
+
+type moveCallback = (file: File, index: number) => MoveOptions;
+
+/**
+ * File class holds information and behavior related to a single file
+ * accessed using `request.file` or `request.multipart.file`. It let
+ * you stream or save user uploaded file to a given location.
+ * 
+ * @class File
+ * @constructor
+ */
+declare interface File {
+		
+	/**
+	 * 
+	 * @param readStream 
+	 * @param options 
+	 */
+	new (readStream : stream, options : FileOptions): File;
+		
+	/**
+	 * Pushes an error to the errors array and also
+	 * set the file status to `error`.
+	 * 
+	 * @method setError
+	 * 
+	 * @param  {String}   message
+	 * @param  {String}   type
+	 * 
+	 * @return {void}
+	 * @param message 
+	 * @param type 
+	 * @return  
+	 */
+	setError(message : string, type : string): void;
+		
+	/**
+	 * Set validation options on the file instance
+	 * 
+	 * @method setOptions
+	 * 
+	 * @param  {Object}   options
+	 * 
+	 * @chainable
+	 * @param options 
+	 * @return  
+	 */
+	setOptions(options : FileOptions): this;
+		
+	/**
+	 * Set a custom validate function. It will be called before
+	 * the move operation
+	 * 
+	 * @method validate
+	 * 
+	 * @param  {Function} callback
+	 * 
+	 * @chainable
+	 * @param callback 
+	 * @return  
+	 */
+	validate(callback : Function): this;
+		
+	/**
+	 * Read the file into buffer.
+	 * 
+	 * @method read
+	 * 
+	 * @return {Promise}
+	 * @return  
+	 */
+	read(): Promise<any>;
+		
+	/**
+	 * Moves file to the `tmp` directory. After this all
+	 * file descriptors are closed and stream cannot be
+	 * used any more.
+	 * 
+	 * @method moveToTmp
+	 * 
+	 * @package {Function} tmpNameFn
+	 * 
+	 * @return {Promise}
+	 * @param tmpNameFn 
+	 * @return  
+	 */
+	moveToTmp(tmpNameFn : Function): Promise<any>;
+		
+	/**
+	 * Moves file from tmp directory to the user
+	 * defined location.
+	 * 
+	 * @method move
+	 * 
+	 * @param  {String} location
+	 * @param  {Object} options
+	 * 
+	 * @return {Promise}
+	 * @param location 
+	 * @param options 
+	 * @return  
+	 */
+	move(location : string, options? : MoveOptions): Promise<void>;
+		
+	/**
+	 * Returns the error if any
+	 * 
+	 * @method errors
+	 * 
+	 * @return {Array}
+	 * @return  
+	 */
+	error(): Array<any>;
+		
+	/**
+	 * Returns a boolean indicating whether
+	 * file has been moved or not
+	 * 
+	 * @method moved
+	 * 
+	 * @return {Boolean}
+	 * @return  
+	 */
+	moved(): boolean;
+		
+	/**
+	 * Returns JSON representation of the file
+	 * 
+	 * @method toJSON
+	 * 
+	 * @return {Object}
+	 * @return  
+	 */
+    toJSON(): FileInformation;
+		
+	/**
+	 * File size
+	 * 
+	 * @attribute size
+	 * 
+	 * @type {Number}
+	 */
+	size : number;
+		
+	/**
+	 * The file name uploaded the end user
+	 * 
+	 * @attribute clientName
+	 * 
+	 * @type {String}
+	 */
+	clientName : string;
+		
+	/**
+	 * File extension
+	 * 
+	 * @attribute extname
+	 * 
+	 * @type {String}
+	 */
+	extname : string;
+		
+	/**
+	 * The field name using which file was
+	 * uploaded
+	 * 
+	 * @attribute fieldName
+	 * 
+	 * @type {String}
+	 */
+	fieldName : string;
+		
+	/**
+	 * File name after move
+	 * 
+	 * @attribute fileName
+	 * 
+	 * @type {String|Null}
+	 */
+	fileName : string;
+		
+	/**
+	 * File tmp path after `moveToTmp` is
+	 * called.
+	 * 
+	 * @attribute tmpPath
+	 * 
+	 * @type {String|Null}
+	 */
+	tmpPath : string;
+		
+	/**
+	 * Marked as ended when stream is consued
+	 * 
+	 * @type {Boolean}
+	 */
+	ended : boolean;
+		
+	/**
+	 * The file main type.
+	 * 
+	 * @attribute type
+	 * 
+	 * @type {String}
+	 */
+	type : string;
+		
+	/**
+	 * The file subtype.
+	 * 
+	 * @type {String}
+	 */
+	subtype : string;
+		
+	/**
+	 * valid statuses are - pending, consumed, moved, error
+	 * Consumed is set when readable stream ends.
+	 * 
+	 * @attribute status
+	 * 
+	 * @type {String}
+	 */
+	status : string;
+}
+
+/**
+ * FileJar is store to keep multiple files of same nature. For
+ * uploading multiple files will be bundled as `Jar` and you
+ * can call methods on this class to perform bulk operations.
+ * 
+ * @class FileJar
+ * @constructor
+ */
+declare interface FileJar {
+		
+	/**
+	 * 
+	 * @param files 
+	 */
+	new (files : File[]): FileJar;
+		
+	/**
+	 * An array of files inside the file jar
+	 * 
+	 * @method files
+	 * 
+	 * @return {Array<File>}
+	 */
+	files : Array<File>;
+		
+	/**
+	 * Add a new file to the store
+	 * 
+	 * @method track
+	 * 
+	 * @param  {File} file
+	 * 
+	 * @return {void}
+	 * @param file 
+	 * @return  
+	 */
+	track(file : File): void;
+		
+	/**
+	 * Return all files inside the Jar. Also this method
+	 * will `toJSON` on each file instance before
+	 * returning.
+	 * 
+	 * To get an array of file instances, call `fileJar.files()`
+	 * 
+	 * @method all
+	 * 
+	 * @return {Array}
+	 * @return  
+	 */
+	all(): Array<FileInformation>;
+		
+	/**
+	 * Returns an array of files that have been moved successfully.
+	 * `file.toJSON()` is called before returing file.
+	 * 
+	 * @method movedList
+	 * 
+	 * @return {Array}
+	 * @return  
+	 */
+	movedList(): Array<FileInformation>;
+		
+	/**
+	 * Returns a boolean indicating whether all files have been moved
+	 * or not.
+	 * 
+	 * @method movedAll
+	 * 
+	 * @return {Boolean}
+	 * @return  
+	 */
+	movedAll(): boolean;
+		
+	/**
+	 * Moves all files to the given location parallely
+	 * 
+	 * @method moveAll
+	 * 
+	 * @param  {String} location
+	 * @param  {Function} callback
+	 * 
+	 * @return {Promise}
+	 * 
+	 * @example
+	 * ```js
+	 * fileJar.moveAll(Helpers.tmpPath('uploads'), function (file) {
+	 *   return { name: new Date().getTime() }
+	 * })
+	 * ```
+	 * @param location 
+	 * @param callback 
+	 * @return  
+	 */
+	moveAll(location : string, callback? : moveCallback): Promise<void>;
+		
+	/**
+	 * Returns an array errors occured during file move.
+	 * 
+	 * @method errors
+	 * 
+	 * @return {Array}
+	 * @return  
+	 */
+	errors(): Array<any>;
+}
+
+/**
+ * Multipart class does all the heavy lifting of processing multipart
+ * data and allows lazy access to the uploaded files. Ideally this
+ * class is used by the BodyParser middleware but if `autoProcess`
+ * is set to false, you can use this class manually to read file
+ * streams and process them.
+ * 
+ * @class Multipart
+ * @constructor
+ */
+declare interface Multipart {
+		
+	/**
+	 * 
+	 * @param request 
+	 * @param disableJar 
+	 */
+	new (request : Http.Request, disableJar : boolean): Multipart;
+		
+	/**
+	 * Executed for each part in stream. Returning
+	 * promise or consuming the stream will
+	 * advance the process.
+	 * 
+	 * @method onPart
+	 * 
+	 * @param  {Stream} part
+	 * 
+	 * @return {Promise}
+	 * @param part 
+	 * @return  
+	 */
+	onPart(part : stream): Promise<void>;
+		
+	/**
+	 * Process files by going over each part of the stream. Files
+	 * are ignored when there are no listeners listening for them.
+	 * 
+	 * @method process
+	 * 
+	 * @return {Promise}
+	 * @return  
+	 */
+	process(): Promise<void>;	
+		
+	/**
+	 * Add a listener to file. It is important to attach a callback and
+	 * handle the processing of the file. Also only one listener can
+	 * be added at a given point of time, since 2 parties processing
+	 * a single file doesn't make much sense.
+	 * 
+	 * @method file
+	 * 
+	 * @param  {String}   name
+	 * @param  {Object}   options
+	 * @param  {Function} callback
+	 * 
+	 * @chainable
+	 * @param name 
+	 * @param options 
+	 * @param callback 
+	 * @return  
+	 */
+	file(name : string, options : Object, callback : Function): Multipart;
+		
+	/**
+	 * Attach a listener to get fields name/value. Callback
+	 * will be executed for each field inside multipart
+	 * form/data.
+	 * 
+	 * @method field
+	 * 
+	 * @param  {Function} callback
+	 * 
+	 * @chainable
+	 * @param callback 
+	 * @return  
+	 */
+	field(callback : Function): Multipart;
+}
+
 declare namespace Http {
     /**
      * A facade over Node.js HTTP `req` object, making it
@@ -1387,7 +1830,7 @@ declare namespace Http {
             * @return {Object}
             * @return  
             */
-        headers(): Object;
+        headers(): any;
             
         /**
             * Returns header value for a given key.
@@ -1770,8 +2213,16 @@ declare namespace Http {
         /**
          * Request macro to access a file from the uploaded
          * files.
+         * 
+         * @example
+	     * ```js
+         * request.file('profile_images', {
+         *       types: ['image'],
+         *       size: '2mb',
+         *   }) 
+         * ```
          */
-        file(name: string, options: {}): Object;
+        file(name: string, options?: FileOptions): File & FileJar;
     }
 
     /**
@@ -3385,103 +3836,6 @@ interface Route extends Macroable {
         * @param verbs 
         */
     new (route : string, handler : string|Function, verbs : string[]): Route;
-        
-    /**
-        * Validates the route to make sure it is a
-        * valid string
-        * 
-        * @method _validateRoute
-        * 
-        * @param  {String}       route
-        * 
-        * @return {void}
-        * 
-        * @private
-        * @param route 
-        * @return  
-        */
-    _validateRoute(route : string): void;
-        
-    /**
-        * Validates the handler to make sure it is a function
-        * or a string, which is considered to be a reference
-        * to the IoC container.
-        * 
-        * @method _validateHandler
-        * 
-        * @param  {Function|String}         handler
-        * 
-        * @return {void}
-        * 
-        * @private
-        * @param handler 
-        * @return  
-        */
-    _validateHandler(handler : {} | string): void;
-        
-    /**
-        * Validate HTTP verbs to make sure it is an
-        * array
-        * 
-        * @method _validateVerbs
-        * 
-        * @param  {Array}       verbs
-        * 
-        * @return {void}
-        * 
-        * @private
-        * @param verbs 
-        * @return  
-        */
-    _validateVerbs(verbs : /* Route.prototype._validateVerbs0 */ any): void;
-        
-    /**
-        * Instantiate private properties on the route instance
-        * 
-        * @method _instantiate
-        * 
-        * @param  {String}              route
-        * @param  {Array}               verbs
-        * @param  {Function|String}     handler
-        * 
-        * @return {void}
-        * 
-        * @private
-        * @param route 
-        * @param verbs 
-        * @param handler 
-        * @return  
-        */
-    _instantiate(route : string, verbs : Array<string>, handler : {} | string): void;
-        
-    /**
-        * Make the regexp pattern for the route. Later this
-        * expression is used to match urls.
-        * 
-        * @method _makeRoutePattern
-        * 
-        * @return {void}
-        * 
-        * @private
-        * @return  
-        */
-    _makeRoutePattern(): void;
-        
-    /**
-        * Returns an object of dynamic domains for a given
-        * route.
-        * 
-        * @method _getSubDomains
-        * 
-        * @param  {String}       host
-        * 
-        * @return {Object|Null}
-        * 
-        * @private
-        * @param host 
-        * @return  
-        */
-    _getSubDomains(host : string): Object|null;
         
     /**
         * Define domain for the route. If domain is defined
