@@ -1,9 +1,12 @@
-import knex = require("knex");
 import ioredis = require("ioredis");
 import http = require("http");
 import stream = require("stream");
+import events = require("events");
+import Bluebird = require("bluebird");
 
 type WorkInProgress = any
+type Omit<T, K extends keyof T> = T extends any ? Pick<T, Exclude<keyof T, K>> : never
+type Overwrite<T, U> = Omit<T, Extract<keyof T, keyof U>> & U;
 
 interface Macroable {
     /**
@@ -5093,7 +5096,7 @@ interface Schema {
       * @param callback 
       * @return  
       */
-    create(table: string, callback: (table: knex.TableBuilder) => void) :void
+    create(table: string, callback: (table: Database.TableBuilder) => void) :void
 
     /**
       * Create a new table if not already exists.
@@ -5110,7 +5113,7 @@ interface Schema {
       * @param callback 
       * @return  
       */
-    createIfNotExists(tableName : string, callback: (table: knex.TableBuilder) => void): void;
+    createIfNotExists(tableName : string, callback: (table: Database.TableBuilder) => void): void;
 
     /**
       * Rename existing table.
@@ -5915,10 +5918,9 @@ interface DatabaseManager {
     close(names? : string | Array<string>): void;
 }
 
-
 /**
   * The database class is a reference to knex for a single
-  * connection. It has couple of extra methods over knex.
+  * connection. It has couple of extra methods over Database.
   *
   * Note: You don't instantiate this class directly but instead
   * make use of @ref('DatabaseManager')
@@ -5927,7 +5929,7 @@ interface DatabaseManager {
   * @constructor
   * @group Database
   */
-interface Database extends DatabaseManager, Database.Query {
+interface Database extends DatabaseManager, Database.Builder {
     /**
       * The schema builder instance to be used
       * for creating database schema.
@@ -5954,7 +5956,7 @@ interface Database extends DatabaseManager, Database.Query {
       *
       * @return {Object}
       */
-    schema: knex.SchemaBuilder;
+    schema: Database.SchemaBuilder;
 
     /**
       * Returns the fn from knex instance
@@ -5963,7 +5965,7 @@ interface Database extends DatabaseManager, Database.Query {
       *
       * @return {Object}
       */
-    fn: knex.FunctionHelper;
+    fn: Database.FunctionHelper;
 
     /**
       * Returns a trx object to be used for running queries
@@ -6040,7 +6042,7 @@ interface Database extends DatabaseManager, Database.Query {
       *
       * @return {Object}
       */
-    query(): Database.Query
+    query(): Database.Builder
 
     /**
       * Closes the database connection. No more queries
@@ -6051,12 +6053,6 @@ interface Database extends DatabaseManager, Database.Query {
       * @return {Promise}
       */
     close(): Promise<void>
-
-    //MonkeyPatch.js
-    from(table: string): Database.Query
-    table(table: string): Database.Query
-    into(table: string): Database.Query
-    withOutPrefix(): Database
 }
 
 declare namespace Database {
@@ -6065,6 +6061,13 @@ declare namespace Database {
     type AggragationResult = Promise<Object[][]>
     type NumberResult = Promise<number>
     type NumberResults = Promise<number[]>
+
+    type Callback = Function;
+    type Client = Function;
+    type Value = string | number | boolean | Date | Array<string> | Array<number> | Array<Date> | Array<boolean> | Buffer | Raw;
+    type ValueMap = { [key: string]: Value | QueryInterface };
+    type ColumnName = string | Raw | QueryInterface | {[key: string]: string };
+    type TableName = string | Raw | QueryInterface;
 
     interface PaginationPages {
         total: number
@@ -6078,64 +6081,505 @@ declare namespace Database {
         row: T[]
     }
 
-    type QueryOrResult<T> = Database.Query | Promise<T[]>
+    interface QueryInterface {
+        select: Select;
+        as: As;
+        columns: Select;
+        column: Select;
+        from: Table;
+        into: Table;
+        table: Table;
+        distinct: Distinct;
 
-    interface Query {
-        select<T>(column: string): QueryOrResult<T>
-        select<T>(...columns: string[]): QueryOrResult<T>
+        // Joins
+        join: Join;
+        joinRaw: JoinRaw;
+        innerJoin: Join;
+        leftJoin: Join;
+        leftOuterJoin: Join;
+        rightJoin: Join;
+        rightOuterJoin: Join;
+        outerJoin: Join;
+        fullOuterJoin: Join;
+        crossJoin: Join;
 
-        where(column: string, value: any): Database.Query | Promise<Object[]>
-        where(column: string, operator: string, value: any): Database.Query
-        where(condition: Object): Database.Query
-        where(callback: Function): Database.Query
-        where(subquery: Database.Query): Database.Query
-        whereNot(column: string, value: any): Database.Query
-        whereNot(column: string, operator: string, value: any): Database.Query
-        whereNot(condition: Object): Database.Query
-        whereNot(subquery: Database.Query): Database.Query
-        whereIn(column: string, params: any[]): Database.Query
-        whereIn(column: string, subquery: Database.Query): Database.Query
-        whereNotIn(column: string, params: any[]): Database.Query
-        whereNotIn(column: string, subquery: Database.Query): Database.Query
-        whereNull(column: string): Database.Query
-        whereNotNull(column: string): Database.Query
-        whereExists(callback: Function): Database.Query
-        whereNotExists(callback: Function): Database.Query
-        whereBetween(column: string, params: number[]): Database.Query
-        whereNotBetween(column: string, params: number[]): Database.Query
-        whereRaw(exp: string, params: Database.SimpleAny[]): Database.Query
+        // Withs
+        with: With;
+        withRaw: WithRaw;
+        withSchema: WithSchema;
+        withWrapped: WithWrapped;
 
-        innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        innerJoin(table: string, callback: Function): Database.Query
-        leftJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        leftOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        rightJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        rightOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        outerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        fullOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        crossJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Query
-        joinRaw(condition: string): Database.Query
+        // Wheres
+        where: Where;
+        andWhere: Where;
+        orWhere: Where;
+        whereNot: Where;
+        andWhereNot: Where;
+        orWhereNot: Where;
+        whereRaw: WhereRaw;
+        orWhereRaw: WhereRaw;
+        andWhereRaw: WhereRaw;
+        whereWrapped: WhereWrapped;
+        havingWrapped: WhereWrapped;
+        whereExists: WhereExists;
+        orWhereExists: WhereExists;
+        whereNotExists: WhereExists;
+        orWhereNotExists: WhereExists;
+        whereIn: WhereIn;
+        orWhereIn: WhereIn;
+        whereNotIn: WhereIn;
+        orWhereNotIn: WhereIn;
+        whereNull: WhereNull;
+        orWhereNull: WhereNull;
+        whereNotNull: WhereNull;
+        orWhereNotNull: WhereNull;
+        whereBetween: WhereBetween;
+        orWhereBetween: WhereBetween;
+        andWhereBetween: WhereBetween;
+        whereNotBetween: WhereBetween;
+        orWhereNotBetween: WhereBetween;
+        andWhereNotBetween: WhereBetween;
 
-        distinct(column: string): Database.Query
-        groupBy(column: string): Database.Query
-        groupByRaw(exp: string): Database.Query
+        // Group by
+        groupBy: GroupBy;
+        groupByRaw: RawQueryBuilder;
+
+        // Order by
+        orderBy: OrderBy;
+        orderByRaw: RawQueryBuilder;
+
+        // Union
+        union: Union;
+        unionAll(callback: QueryCallback): QueryInterface;
+
+        // Having
+        having: Having;
+        andHaving: Having;
+        havingRaw: RawQueryBuilder;
+        orHaving: Having;
+        orHavingRaw: RawQueryBuilder;
+        havingIn: HavingIn;
+
+        // Clear
+        clearSelect(): QueryInterface;
+        clearWhere(): QueryInterface;
+
+        // Paging
+        offset(offset: number): QueryInterface;
+        limit(limit: number): QueryInterface;
+
+        // Aggregation
+        count(columnName?: string): QueryInterface;
+        countDistinct(columnName?: string): QueryInterface;
+        min(columnName: string): QueryInterface;
+        max(columnName: string): QueryInterface;
+        sum(columnName: string): QueryInterface;
+        sumDistinct(columnName: string): QueryInterface;
+        avg(columnName: string): QueryInterface;
+        avgDistinct(columnName: string): QueryInterface;
+        increment(columnName: string, amount?: number): QueryInterface;
+        decrement(columnName: string, amount?: number): QueryInterface;
+
+        // Others
+        first: Select;
+
+        debug(enabled?: boolean): QueryInterface;
+        pluck(column: string): QueryInterface;
+
+        insert(data: any, returning?: string | string[]): QueryInterface;
+        modify(callback: QueryCallbackWithArgs, ...args: any[]): QueryInterface;
+        update(data: any, returning?: string | string[]): QueryInterface;
+        update(columnName: string, value: Value, returning?: string | string[]): QueryInterface;
+        returning(column: string | string[]): QueryInterface;
+
+        del(returning?: string | string[]): QueryInterface;
+        delete(returning?: string | string[]): QueryInterface;
+        truncate(): QueryInterface;
+
+        clone(): QueryInterface;
+        toSQL(): Sql;
+    }
+
+    interface As {
+        (columnName: string): QueryInterface;
+    }
+
+    interface Select extends ColumnNameQueryBuilder {
+        (aliases: { [alias: string]: string }): QueryInterface;
+    }
+
+    interface Table {
+        (tableName: TableName): QueryInterface;
+        (callback: Function): QueryInterface;
+        (raw: Raw): QueryInterface;
+    }
+
+    interface Distinct extends ColumnNameQueryBuilder {
+    }
+
+    interface Join {
+        (raw: Raw): QueryInterface;
+        (tableName: TableName | QueryCallback, clause: (this: JoinClause, join: JoinClause) => void): QueryInterface;
+        (tableName: TableName | QueryCallback, columns: { [key: string]: string | number | Raw }): QueryInterface;
+        (tableName: TableName | QueryCallback, raw: Raw): QueryInterface;
+        (tableName: TableName | QueryCallback, column1: string, column2: string): QueryInterface;
+        (tableName: TableName | QueryCallback, column1: string, raw: Raw): QueryInterface;
+        (tableName: TableName | QueryCallback, column1: string, operator: string, column2: string): QueryInterface;
+    }
+
+    interface JoinClause {
+        on(raw: Raw): JoinClause;
+        on(callback: QueryCallback): JoinClause;
+        on(columns: { [key: string]: string | Raw }): JoinClause;
+        on(column1: string, column2: string): JoinClause;
+        on(column1: string, raw: Raw): JoinClause;
+        on(column1: string, operator: string, column2: string | Raw): JoinClause;
+        andOn(raw: Raw): JoinClause;
+        andOn(callback: QueryCallback): JoinClause;
+        andOn(columns: { [key: string]: string | Raw }): JoinClause;
+        andOn(column1: string, column2: string): JoinClause;
+        andOn(column1: string, raw: Raw): JoinClause;
+        andOn(column1: string, operator: string, column2: string | Raw): JoinClause;
+        orOn(raw: Raw): JoinClause;
+        orOn(callback: QueryCallback): JoinClause;
+        orOn(columns: { [key: string]: string | Raw }): JoinClause;
+        orOn(column1: string, column2: string): JoinClause;
+        orOn(column1: string, raw: Raw): JoinClause;
+        orOn(column1: string, operator: string, column2: string | Raw): JoinClause;
+        onIn(column1: string, values: any[]): JoinClause;
+        andOnIn(column1: string, values: any[]): JoinClause;
+        orOnIn(column1: string, values: any[]): JoinClause;
+        onNotIn(column1: string, values: any[]): JoinClause;
+        andOnNotIn(column1: string, values: any[]): JoinClause;
+        orOnNotIn(column1: string, values: any[]): JoinClause;
+        onNull(column1: string): JoinClause;
+        andOnNull(column1: string): JoinClause;
+        orOnNull(column1: string): JoinClause;
+        onNotNull(column1: string): JoinClause;
+        andOnNotNull(column1: string): JoinClause;
+        orOnNotNull(column1: string): JoinClause;
+        onExists(callback: QueryCallback): JoinClause;
+        andOnExists(callback: QueryCallback): JoinClause;
+        orOnExists(callback: QueryCallback): JoinClause;
+        onNotExists(callback: QueryCallback): JoinClause;
+        andOnNotExists(callback: QueryCallback): JoinClause;
+        orOnNotExists(callback: QueryCallback): JoinClause;
+        onBetween(column1: string, range: [any, any]): JoinClause;
+        andOnBetween(column1: string, range: [any, any]): JoinClause;
+        orOnBetween(column1: string, range: [any, any]): JoinClause;
+        onNotBetween(column1: string, range: [any, any]): JoinClause;
+        andOnNotBetween(column1: string, range: [any, any]): JoinClause;
+        orOnNotBetween(column1: string, range: [any, any]): JoinClause;
+        using(column: string | string[] | Raw | { [key: string]: string | Raw }): JoinClause;
+        type(type: string): JoinClause;
+    }
+
+    interface JoinRaw {
+        (tableName: string, binding?: Value): QueryInterface;
+    }
+
+    interface With extends WithRaw, WithWrapped {
+    }
+
+    interface WithRaw {
+        (alias: string, raw: Raw): QueryInterface;
+        (alias: string, sql: string, bindings?: Value[] | Object): QueryInterface;
+    }
+
+    interface WithSchema {
+        (schema: string): QueryInterface;
+    }
+
+    interface WithWrapped {
+        (alias: string, callback: (queryBuilder: QueryInterface) => any): QueryInterface;
+    }
+
+    interface Where extends WhereRaw, WhereWrapped, WhereNull {
+        (raw: Raw): QueryInterface;
+        (callback: QueryCallback): QueryInterface;
+        (object: Object): QueryInterface;
+        (columnName: string, value: Value | null): QueryInterface;
+        (columnName: string, operator: string, value: Value | QueryInterface | null): QueryInterface;
+        (left: Raw, operator: string, right: Value | QueryInterface | null): QueryInterface;
+    }
+
+    interface WhereRaw extends RawQueryBuilder {
+        (condition: boolean): QueryInterface;
+    }
+
+    interface WhereWrapped {
+        (callback: QueryCallback): QueryInterface;
+    }
+
+    interface WhereNull {
+        (columnName: string): QueryInterface;
+    }
+
+    interface WhereIn {
+        (columnName: string, values: Value[]): QueryInterface;
+        (columnName: string, callback: QueryCallback): QueryInterface;
+        (columnName: string, query: QueryInterface): QueryInterface;
+    }
+
+    interface WhereBetween {
+        (columnName: string, range: [Value, Value]): QueryInterface;
+    }
+
+    interface WhereExists {
+        (callback: QueryCallback): QueryInterface;
+        (query: QueryInterface): QueryInterface;
+    }
+
+    interface WhereNull {
+        (columnName: string): QueryInterface;
+    }
+
+    interface WhereIn {
+        (columnName: string, values: Value[]): QueryInterface;
+    }
+
+    interface GroupBy extends RawQueryBuilder, ColumnNameQueryBuilder {
+    }
+
+    interface OrderBy {
+        (columnName: string, direction?: string): QueryInterface;
+    }
+
+    interface Union {
+        (callback: QueryCallback, wrap?: boolean): QueryInterface;
+        (callbacks: QueryCallback[], wrap?: boolean): QueryInterface;
+        (...callbacks: QueryCallback[]): QueryInterface;
+        // (...callbacks: QueryCallback[], wrap?: boolean): QueryInterface;
+    }
+
+    interface Having extends RawQueryBuilder, WhereWrapped {
+        (tableName: string, column1: string, operator: string, column2: string): QueryInterface;
+    }
+
+    interface HavingIn {
+        (columnName: string, values: Value[]): QueryInterface;
+    }
+
+    // commons
+
+    interface ColumnNameQueryBuilder {
+        (...columnNames: ColumnName[]): QueryInterface;
+        (columnNames: ColumnName[]): QueryInterface;
+    }
+
+    interface RawQueryBuilder {
+        (sql: string, ...bindings: (Value | QueryInterface)[]): QueryInterface;
+        (sql: string, bindings: (Value | QueryInterface)[] | ValueMap): QueryInterface;
+        (raw: Raw): QueryInterface;
+    }
+
+    // Raw
+
+    interface Raw extends events.EventEmitter {
+        wrap(before: string, after: string): Raw;
+    }
+
+    interface RawBuilder {
+        (value: Value): Raw;
+        (sql: string, ...bindings: (Value | QueryInterface)[]): Raw;
+        (sql: string, bindings: (Value | QueryInterface)[] | ValueMap): Raw;
+    }
+
+    //
+    // QueryInterface
+    //
+
+    type QueryCallback = (this: QueryInterface, builder: QueryInterface) => void;
+    type QueryCallbackWithArgs = (this: QueryInterface, builder: QueryInterface, ...args: any[]) => void;
+
+    interface Sql {
+        method: string;
+        options: any;
+        bindings: Value[];
+        sql: string;
+    }
+
+    //
+    // Schema builder
+    //
+    interface SchemaBuilder extends Bluebird<any> {
+        createTable(tableName: string, callback: (tableBuilder: CreateTableBuilder) => any): SchemaBuilder;
+        createTableIfNotExists(tableName: string, callback: (tableBuilder: CreateTableBuilder) => any): SchemaBuilder;
+        alterTable(tableName: string, callback: (tableBuilder: CreateTableBuilder) => any): SchemaBuilder;
+        renameTable(oldTableName: string, newTableName: string): Bluebird<void>;
+        dropTable(tableName: string): SchemaBuilder;
+        hasTable(tableName: string): Bluebird<boolean>;
+        hasColumn(tableName: string, columnName: string): Bluebird<boolean>;
+        table(tableName: string, callback: (tableBuilder: AlterTableBuilder) => any): Bluebird<void>;
+        dropTableIfExists(tableName: string): SchemaBuilder;
+        raw(statement: string): SchemaBuilder;
+        withSchema(schemaName: string): SchemaBuilder;
+    }
+
+    interface TableBuilder {
+        increments(columnName?: string): ColumnBuilder;
+        bigIncrements(columnName?: string): ColumnBuilder;
+        dropColumn(columnName: string): TableBuilder;
+        dropColumns(...columnNames: string[]): TableBuilder;
+        renameColumn(from: string, to: string): ColumnBuilder;
+        integer(columnName: string): ColumnBuilder;
+        bigInteger(columnName: string): ColumnBuilder;
+        text(columnName: string, textType?: string): ColumnBuilder;
+        string(columnName: string, length?: number): ColumnBuilder;
+        float(columnName: string, precision?: number, scale?: number): ColumnBuilder;
+        decimal(columnName: string, precision?: number | null, scale?: number): ColumnBuilder;
+        boolean(columnName: string): ColumnBuilder;
+        date(columnName: string): ColumnBuilder;
+        dateTime(columnName: string): ColumnBuilder;
+        time(columnName: string): ColumnBuilder;
+        timestamp(columnName: string, standard?: boolean): ColumnBuilder;
+        timestamps(useTimestampType?: boolean, makeDefaultNow?: boolean): ColumnBuilder;
+        binary(columnName: string, length?: number): ColumnBuilder;
+        enum(columnName: string, values: Value[]): ColumnBuilder;
+        enu(columnName: string, values: Value[]): ColumnBuilder;
+        json(columnName: string): ColumnBuilder;
+        jsonb(columnName: string): ColumnBuilder;
+        uuid(columnName: string): ColumnBuilder;
+        comment(val: string): TableBuilder;
+        specificType(columnName: string, type: string): ColumnBuilder;
+        primary(columnNames: string[]): TableBuilder;
+        index(columnNames: (string | Raw)[], indexName?: string, indexType?: string): TableBuilder;
+        unique(columnNames: (string | Raw)[], indexName?: string): TableBuilder;
+        foreign(column: string, foreignKeyName?: string): ForeignConstraintBuilder;
+        foreign(columns: string[], foreignKeyName?: string): MultikeyForeignConstraintBuilder;
+        dropForeign(columnNames: string[], foreignKeyName?: string): TableBuilder;
+        dropUnique(columnNames: (string | Raw)[], indexName?: string): TableBuilder;
+        dropPrimary(constraintName?: string): TableBuilder;
+        dropIndex(columnNames: (string | Raw)[], indexName?: string): TableBuilder;
+        dropTimestamps(): ColumnBuilder;
+    }
+
+    interface CreateTableBuilder extends TableBuilder {
+    }
+
+    interface AlterTableBuilder extends TableBuilder {
+    }
+
+    interface MySqlAlterTableBuilder extends AlterTableBuilder {
+    }
+
+    interface ColumnBuilder {
+        index(indexName?: string): ColumnBuilder;
+        primary(constraintName?: string): ColumnBuilder;
+        unique(indexName?: string): ColumnBuilder;
+        references(columnName: string): ReferencingColumnBuilder;
+        onDelete(command: string): ColumnBuilder;
+        onUpdate(command: string): ColumnBuilder;
+        defaultTo(value: Value): ColumnBuilder;
+        unsigned(): ColumnBuilder;
+        notNullable(): ColumnBuilder;
+        nullable(): ColumnBuilder;
+        comment(value: string): ColumnBuilder;
+        alter(): ColumnBuilder;
+    }
+
+    interface ForeignConstraintBuilder {
+        references(columnName: string): ReferencingColumnBuilder;
+    }
+
+    interface MultikeyForeignConstraintBuilder {
+        references(columnNames: string[]): ReferencingColumnBuilder;
+    }
+
+    interface PostgreSqlColumnBuilder extends ColumnBuilder {
+        index(indexName?: string, indexType?: string): ColumnBuilder;
+    }
+
+    interface ReferencingColumnBuilder extends ColumnBuilder {
+        inTable(tableName: string): ColumnBuilder;
+    }
+
+    interface AlterColumnBuilder extends ColumnBuilder {
+    }
+
+    interface MySqlAlterColumnBuilder extends AlterColumnBuilder {
+        first(): AlterColumnBuilder;
+        after(columnName: string): AlterColumnBuilder;
+    }
+
+    //
+    // Configurations
+    //
+
+    interface ColumnInfo {
+        defaultValue: Value;
+        type: string;
+        maxLength: number;
+        nullable: boolean;
+    }
+
+    interface FunctionHelper {
+        now(): Raw;
+    }
+
+    interface Builder {
+        //MonkeyPatch.js
+        returning(column: string | string[]): Database.Builder
+        from(table: string): Database.Builder
+        table(table: string): Database.Builder
+        into(table: string): Database.Builder
+        withOutPrefix(): Database.Builder
+
+        select(column: string): Database.Builder
+        select(...columns: string[]): Database.Builder
+
+        where(column: string, value: any): Database.Builder
+        where(column: string, operator: string, value: any): Database.Builder
+        where(condition: Object): Database.Builder
+        where(callback: Function): Database.Builder
+        where(subquery: Database.Builder): Database.Builder
+        whereNot(column: string, value: any): Database.Builder
+        whereNot(column: string, operator: string, value: any): Database.Builder
+        whereNot(condition: Object): Database.Builder
+        whereNot(subquery: Database.Builder): Database.Builder
+        whereIn(column: string, params: any[]): Database.Builder
+        whereIn(column: string, subquery: Database.Builder): Database.Builder
+        whereNotIn(column: string, params: any[]): Database.Builder
+        whereNotIn(column: string, subquery: Database.Builder): Database.Builder
+        whereNull(column: string): Database.Builder
+        whereNotNull(column: string): Database.Builder
+        whereExists(callback: Function): Database.Builder
+        whereNotExists(callback: Function): Database.Builder
+        whereBetween(column: string, params: number[]): Database.Builder
+        whereNotBetween(column: string, params: number[]): Database.Builder
+        whereRaw(exp: string, params: Database.SimpleAny[]): Database.Builder
+
+        innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        innerJoin(table: string, callback: Function): Database.Builder
+        leftJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        leftOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        rightJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        rightOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        outerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        fullOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        crossJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
+        joinRaw(condition: string): Database.Builder
+
+        distinct(column: string): Database.Builder
+        groupBy(column: string): Database.Builder
+        groupByRaw(exp: string): Database.Builder
         
-        orderBy(column: string, direction?: Database.Direction): Database.Query
-        orderByRaw(exp: string): Database.Query
+        orderBy(column: string, direction?: Database.Direction): Database.Builder
+        orderByRaw(exp: string): Database.Builder
 
-        having(column: string, operator: string, value: any): Database.Query
-        havingIn(column: string, params: any[]): Database.Query
-        havingNotIn(column: string, params: any[]): Database.Query
-        havingNull(column: string): Database.Query
-        havingNotNull(column: string): Database.Query
-        havingExists(subquery:Database.Query): Database.Query
-        havingExists(callback: Function): Database.Query
-        havingNotExists(subquery:Database.Query): Database.Query
-        havingNotExists(callback: Function): Database.Query
-        havingRaw(column: string, operator: string, value: Database.SimpleAny[]): Database.Query
+        having(column: string, operator: string, value: any): Database.Builder
+        havingIn(column: string, params: any[]): Database.Builder
+        havingNotIn(column: string, params: any[]): Database.Builder
+        havingNull(column: string): Database.Builder
+        havingNotNull(column: string): Database.Builder
+        havingExists(subquery:Database.Builder): Database.Builder
+        havingExists(callback: Function): Database.Builder
+        havingNotExists(subquery:Database.Builder): Database.Builder
+        havingNotExists(callback: Function): Database.Builder
+        havingRaw(column: string, operator: string, value: Database.SimpleAny[]): Database.Builder
 
-        offset(offset: number): Database.Query
-        limit(limit: number): Database.Query
+        offset(offset: number): Database.Builder
+        limit(limit: number): Database.Builder
 
         insert(row: Object): NumberResults
         insert(rows: Object[]): NumberResults
@@ -6181,26 +6625,19 @@ declare namespace Database {
         map<T, R>(callback: (row: T | Object) => R): Promise<R[]> 
         reduce<T, S>(reducer: (acc: S, row: T) => S, initValue: S): Promise<S>
 
-        clone(): Database
+        clone(): Database.Builder;
         columnInfo(): Promise<Object>
 
         raw<T>(expression: string, params?: Database.SimpleAny[]): Promise<T[]>
 
         asCallback<T>(callback: (err: Object, rows: T[]) => void): void
         stream(callback: any): Object
-        on(event: string, callback: Function): Database.Query
-        toSQL(): ToSQLResult
+        on(event: string, callback: Function): Database.Builder
+        toSQL(): Sql
         toString(): string
 
-        then(callback: (response: any) => void): Database.Query
-        catch(callback: (error: any) => void): Database.Query
-    }
-
-    interface ToSQLResult {
-        bindings: any[]
-        method: string
-        sql: string
-        toNative(): Object
+        then(callback: (response: any) => void): Database.Builder
+        catch(callback: (error: any) => void): Database.Builder
     }
 }
 
@@ -8202,6 +8639,12 @@ declare namespace Lucid {
           * @return {Class}
           */
         Serializer : Serializer;
+
+        /**
+         * visible or hidden (one at a time) on your model
+         */
+        visible : Array<string>;
+        hidden  : Array<string>;
             
         /**
           * This method is executed for all the date fields
@@ -8298,31 +8741,28 @@ declare namespace Lucid {
     /**
       * Aggregrates to be added to the query
       * builder
-      * method redirect Database.Query
+      * method redirect Database.Builder
       */
-    type aggregates = {
-        [method in
-            'sum'              |
-            'sumDistinct'      |
-            'avg'              |
-            'avgDistinct'      |
-            'min'              |
-            'max'              |
-            'count'            |
-            'countDistinct'    |
-            'getSum'           |
-            'getSumDistinct'   |
-            'getAvg'           |
-            'getAvgDistinct'   |
-            'getMin'           |
-            'getMax'           |
-            'getCount'         |
-            'getCountDistinct' |
-            'pluck'            |
-            'toSQL'            |
-            'toString'         
-        ]: (...args: Array<any>) => any
-    };
+    type aggregates = 
+        'sum'               |
+        'sumDistinct'       |
+        'avg'               |
+        'avgDistinct'       |
+        'min'               |
+        'max'               |
+        'count'             |
+        'countDistinct'     |
+        'getSum'            |
+        'getSumDistinct'    |
+        'getAvg'            |
+        'getAvgDistinct'    |
+        'getMin'            |
+        'getMax'            |
+        'getCount'          |
+        'getCountDistinct'  |
+        'pluck'             |
+        'toSQL'             |
+        'toString';
 
     /**
       * Query builder for the lucid models extended
@@ -8331,7 +8771,7 @@ declare namespace Lucid {
       * @class QueryBuilder
       * @constructor
       */
-    interface QueryBuilder extends aggregates {
+    interface QueryBuilder extends Pick<Database.Builder, aggregates> {
         /**
           * 
           * @param Model 
@@ -8387,7 +8827,7 @@ declare namespace Lucid {
           * @return {Model|Null}
           * @return  
           */
-        first(): Model | null;
+        first(): Promise<Model|null>;
             
         /**
           * Returns the latest row from the database.
@@ -8401,7 +8841,7 @@ declare namespace Lucid {
           * @param field 
           * @return  
           */
-        last(field : string): Model | null;
+        last(field : string): Promise<Model|null>;
             
         /**
           * Throws an exception when unable to find the first
@@ -8415,7 +8855,7 @@ declare namespace Lucid {
           * @throws {ModelNotFoundException} If unable to find first row
           * @return  
           */
-        firstOrFail(): Model;
+        firstOrFail(): Promise<Model>;
             
         /**
           * Paginate records, same as fetch but returns a
@@ -8432,7 +8872,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        paginate(page? : 1, limit? : 20): Serializer;
+        paginate(page? : 1, limit? : 20): Promise<Serializer>;
             
         /**
           * Bulk update data from query builder. This method will also
@@ -8500,7 +8940,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        pickInverse(limit? : 1): Serializer;
+        pickInverse(limit? : 1): Promise<Serializer>;
             
         /**
           * Pick x number of rows from the database
@@ -8514,7 +8954,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        pick(limit? : 1): Serializer;
+        pick(limit? : 1): Promise<Serializer>;
             
         /**
           * Eagerload relationships when fetching the parent
@@ -8765,51 +9205,49 @@ declare namespace Lucid {
         /**
           * Reference to query builder with pre selected table
           */
-        query: Database.Query;
+        query: Database.Builder;
     }
 
     namespace Relations {
         /**
           * methodList to be added to the query
-          * method redirect Database.Query
+          * method redirect Database.Builder
           */
-        type methodList = {
-            [method in
-                'increment'        |
-                'decrement'        |
-                'sum'              |
-                'sumDistinct'      |
-                'avg'              |
-                'avgDistinct'      |
-                'min'              |
-                'max'              |
-                'count'            |
-                'countDistinct'    |
-                'getSum'           |
-                'getSumDistinct'   |
-                'getAvg'           |
-                'getAvgDistinct'   |
-                'getMin'           |
-                'getMax'           |
-                'getCount'         |
-                'getCountDistinct' |
-                'truncate'         |
-                'ids'              |
-                'paginate'         |
-                'pair'             |
-                'pluckFirst'       |
-                'pluckId'          |
-                'pick'             |
-                'pickInverse'      |
-                'delete'           |
-                'update'           |
-                'first'            |
-                'fetch'            |
-                'toSQL'            |
-                'toString'
-            ]: (...args: Array<any>) => any;
-        }
+        type baseMethod = 
+            'increment'        |
+            'decrement'        |
+            'sum'              |
+            'sumDistinct'      |
+            'avg'              |
+            'avgDistinct'      |
+            'min'              |
+            'max'              |
+            'count'            |
+            'countDistinct'    |
+            'getSum'           |
+            'getSumDistinct'   |
+            'getAvg'           |
+            'getAvgDistinct'   |
+            'getMin'           |
+            'getMax'           |
+            'getCount'         |
+            'getCountDistinct' |
+            'truncate';
 
+        type queryMethod =             
+            'ids'              |
+            'paginate'         |
+            'pair'             |
+            //'pluckFirst'       |
+            //'pluckId'          |
+            'pick'             |
+            'pickInverse'      |
+            'delete'           |
+            'update'           |
+            'first'            |
+            'fetch'            |
+            'toSQL'            |
+            'toString'
         /**
           * Base relation is supposed to be extended by other
           * relations. It takes care of commonly required
@@ -8818,7 +9256,7 @@ declare namespace Lucid {
           * @class BaseRelation
           * @constructor
           */
-        interface BaseRelation extends methodList {                
+        interface BaseRelation extends Pick<Database.Builder, baseMethod>, Pick<QueryBuilder, queryMethod> {
             /**
               * 
               * @param parentInstance 
@@ -8827,7 +9265,7 @@ declare namespace Lucid {
               * @param foreignKey 
               * @return  
               */
-            new (parentInstance : Object, RelatedModel : string | Object, primaryKey : string, foreignKey : string): BaseRelation;
+            new(parentInstance: Object, RelatedModel: string | Object, primaryKey: string, foreignKey: string): BaseRelation;
                 
             parentInstance : Object
             RelatedModel   : string
@@ -8937,7 +9375,7 @@ declare namespace Lucid {
               * @param modelInstances 
               * @return  
               */
-            mapValues(modelInstances : Array<Object>): Array<Object>;
+            mapValues(modelInstances : Array<any>): Array<Object>;
                 
             /**
               * Takes an array of related instances and returns an array
@@ -8963,7 +9401,7 @@ declare namespace Lucid {
               * @return {Model}
               * @return  
               */
-            fetch(): Model;
+            fetch(): Promise<any>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -8977,7 +9415,7 @@ declare namespace Lucid {
               * @param count 
               * @return  
               */
-            relatedWhere(count : boolean): Database.Query;
+            relatedWhere(count : boolean): Database.Builder;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -9055,7 +9493,7 @@ declare namespace Lucid {
               * @return {Object|Null}
               * @return  
               */
-            first(): Object | null;
+            first(): Promise<Model|null>;
                 
             /**
               * Map values from model instances to an array. It is required
@@ -9094,7 +9532,7 @@ declare namespace Lucid {
               * @return {Object}
               * @return  
               */
-            fetch(): Object;
+            fetch(): Promise<any>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -9110,7 +9548,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Query;
+            relatedWhere(count : boolean, counter : number): Database.Builder;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -9378,7 +9816,7 @@ declare namespace Lucid {
               * @return {Array}
               * @return  
               */
-            ids<T>(): Array<T>;
+            ids<T>(): Promise<T[]>;
                 
             /**
               * Execute the query and setup pivot values
@@ -9432,7 +9870,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Query;
+            relatedWhere(count : boolean, counter : number): Database.Builder;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -9476,7 +9914,7 @@ declare namespace Lucid {
               * @return {Number} Number of effected rows
               * @return  
               */
-            delete(): Promise<number>;
+            delete(): Database.NumberResult;
                 
             /**
               * Update related rows
@@ -9489,7 +9927,7 @@ declare namespace Lucid {
               * @param values 
               * @return  
               */
-            update(values : Object): Promise<number>;
+            update(values : Object): Database.NumberResult;
                 
             /**
               * Detach existing relations from the pivot table
@@ -9642,7 +10080,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Query;
+            relatedWhere(count : boolean, counter : number): Database.Builder;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -9833,7 +10271,7 @@ declare namespace Lucid {
               * @param count 
               * @return  
               */
-            relatedWhere(count : boolean): Database.Query;
+            relatedWhere(count : boolean): Database.Builder;
                 
             /**
               * istanbul ignore next
@@ -9857,7 +10295,7 @@ declare namespace Lucid {
         }
     }
 
-    type queryCallback = (query: QueryBuilder) => void;
+    type queryProxy = Overwrite<QueryBuilder, Overwrite<Database.QueryInterface, Database.Builder>>;
 
     /**
       * Lucid model is a base model and supposed to be
@@ -9881,7 +10319,7 @@ declare namespace Lucid {
           *
           * @return {Object}
           */
-        dirty: Object;
+        dirty: any;
 
         /**
           * Tells whether model is dirty or not
@@ -10295,7 +10733,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        query(): QueryBuilder
+        query(): queryProxy;
             
         /**
           * Returns a query builder without any global scopes
@@ -10304,7 +10742,7 @@ declare namespace Lucid {
           *
           * @return {QueryBuilder}
           */
-        queryWithOutScopes(): QueryBuilder;
+        queryWithOutScopes(): queryProxy;
             
         /**
           * Define a query macro to be added to query builder.
@@ -10355,7 +10793,7 @@ declare namespace Lucid {
           *
           * @chainable
           */
-        addGlobalScope(callback : queryCallback, name? : string): this;
+        addGlobalScope(callback : Database.QueryCallback, name? : string): this;
             
         /**
           * Attach a listener to be called everytime a query on
@@ -10367,7 +10805,7 @@ declare namespace Lucid {
           *
           * @chainable
           */
-        onQuery(callback : queryCallback): this;
+        onQuery(callback : Database.QueryCallback): this;
             
         /**
           * Adds a new trait to the model. Ideally it does a very
@@ -10404,7 +10842,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        last(field? : string): Model;
+        last(field? : string): Promise<Model>;
             
         /**
           * Creates many instances of model in parallel.
@@ -10439,7 +10877,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        find(value : string | number): Model | null;
+        find(value : string | number): Promise<Model|null>;
             
         /**
           * Find a row using the primary key or
@@ -10454,7 +10892,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        findOrFail(value : string | number): Model;
+        findOrFail(value : string | number): Promise<Model>;
             
         /**
           * Find a model instance using key/value pair
@@ -10467,7 +10905,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        findBy(key : string, value : string | number): Model | null;
+        findBy(key : string, value : string | number): Promise<Model|null>;
             
         /**
           * Find a model instance using key/value pair or
@@ -10483,7 +10921,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        findByOrFail(key : string, value : string | number): Model | null;
+        findByOrFail(key : string, value : string | number): Promise<Model|null>;
             
         /**
           * Returns the first row. This method will add orderBy asc
@@ -10494,7 +10932,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        first(): Model | null;
+        first(): Promise<Model|null>;
             
         /**
           * Returns the first row or throw an exception.
@@ -10507,7 +10945,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        firstOrFail(): Model;
+        firstOrFail(): Promise<Model>;
             
         /**
           * Find a row or create a new row when it doesn't
@@ -10522,7 +10960,7 @@ declare namespace Lucid {
           *
           * @return {Model}
           */
-        findOrCreate(whereClause : Object, payload : Object, trx? : Object): Model;
+        findOrCreate(whereClause : Object, payload : Object, trx? : Object): Promise<Model>;
             
         /**
           * Find row from database or returns an instance of
@@ -10535,7 +10973,7 @@ declare namespace Lucid {
           *
           * @return {Model}
           */
-        findOrNew(whereClause : Object, payload : Object): Model;
+        findOrNew(whereClause : Object, payload : Object): Promise<Model>;
             
         /**
           * Fetch everything from the database
@@ -10545,7 +10983,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        all(): Serializer;
+        all(): Promise<Serializer>;
             
         /**
           * Select x number of rows
@@ -10557,7 +10995,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        pick(limit? : 1): Serializer;
+        pick(limit? : 1): Promise<Serializer>;
             
         /**
           * Select x number of rows in inverse
@@ -10569,7 +11007,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        pickInverse(limit? : 1): Serializer;
+        pickInverse(limit? : 1): Promise<Serializer>;
 
         /**
           * Returns an array of ids.
@@ -10596,7 +11034,7 @@ declare namespace Lucid {
           *
           * @return {Object}
           */
-        pair(lhs : string, rhs : string): Object;
+        pair(lhs : string, rhs : string): Promise<Object>;
             
         /**
           * Return a count of all model records.
@@ -10766,7 +11204,7 @@ declare namespace Lucid {
           * @param connection 
           * @return  
           */
-        query(table : string, connection : Database): Database.Query;
+        query(table : string, connection : Database): Database.Builder;
             
         /**
           * Save the model instance to the database.

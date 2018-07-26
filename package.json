@@ -9,7 +9,6 @@
     "types"
   ],
   "dependencies": {
-    "@types/kenx": "*",
     "@types/ioredis": "*"
   },
   "author": "tiansin",
