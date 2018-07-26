@@ -3,6 +3,7 @@ import http = require("http");
 import stream = require("stream");
 import events = require("events");
 import Bluebird = require("bluebird");
+import GE = require("@adonisjs/generic-exceptions")
 
 type WorkInProgress = any
 type Omit<T, K extends keyof T> = T extends any ? Pick<T, Exclude<keyof T, K>> : never
@@ -5990,7 +5991,7 @@ interface Database extends DatabaseManager, Database.Builder {
       *   .insert({ username: 'virk' })
       * ```
       */
-    beginTransaction(): Database
+    beginTransaction(): Promise<Database.Transaction>;
 
     /**
       * Run a callback inside a transaction
@@ -6001,7 +6002,7 @@ interface Database extends DatabaseManager, Database.Builder {
       *
       * @returns Object
       */
-    transaction(callback: (ctx: Database) => void): void
+    transaction(callback: (trx: Database.Transaction) => void): void
 
     /**
       * Starts a global transaction, where all query builder
@@ -6056,8 +6057,8 @@ interface Database extends DatabaseManager, Database.Builder {
 }
 
 declare namespace Database {
-    type SimpleAny = number | string | Date 
     type Direction = 'asc' | 'desc'
+    type SimpleAny = number | string | Date 
     type AggragationResult = Promise<Object[][]>
     type NumberResult = Promise<number>
     type NumberResults = Promise<number[]>
@@ -6196,8 +6197,16 @@ declare namespace Database {
         delete(returning?: string | string[]): QueryInterface;
         truncate(): QueryInterface;
 
+        transacting(trx?: Transaction): QueryInterface;
+
         clone(): QueryInterface;
         toSQL(): Sql;
+    }
+
+    interface Transaction extends QueryInterface{
+        savepoint(transactionScope: (trx: Transaction) => any): Bluebird<any>;
+        commit(value?: any): QueryInterface;
+        rollback(error?: any): QueryInterface;
     }
 
     interface As {
@@ -6619,7 +6628,7 @@ declare namespace Database {
         getAvg(column: string): NumberResult
         getAvgDistinct(column: string): NumberResult
 
-        last<T>(field: string): Promise<T>;
+        last<T>(field?: string): Promise<T>;
         pluck<T>(colum: string): Promise<T[]>
         first<T>(): Promise<T>
         map<T, R>(callback: (row: T | Object) => R): Promise<R[]> 
@@ -6697,7 +6706,7 @@ declare namespace Validator {
           * @return {this}
           * @return  
           */
-        run(): Promise<Validation>;
+        run(): this;
             
         /**
           * Run all validations, regardless of failures. The `run`
@@ -6709,7 +6718,7 @@ declare namespace Validator {
           * @return {this}
           * @return  
           */
-        runAll(): Promise<Validation>;
+        runAll(): this;
             
         /**
           * Returns an array of validation messages
@@ -6766,7 +6775,7 @@ declare namespace Validator {
         toJSON(): Array<any>
     }
 
-    type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Object) => Validation;
+    type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Object) => Promise<Validation>;
     type Sanitize = (data: Object, rules: Object) => Object;
     type Formatters = { Vanilla: Validator.Formatter, JsonApi: Validator.Formatter };
     type ValidatorHandler = <T>(data: Object, field: string, message: string, args: Array<T>, get: (obj: Object, path: string) => any) => Promise<void>;
@@ -6841,9 +6850,19 @@ declare namespace Validator {
             'trim'
         ]: Sanitizor
     }
+    
+    /**
+     * Exception to throw when validation fails
+     *
+     * @class ValidationException
+     */
+    interface ValidationException extends GE.RuntimeException {
+        validationFailed (messages: Array<string>): ValidationException;
+    }
+
 }
 
-declare class Validator {
+declare interface Validator {
     validateAll : Validator.Validate
     validate    : Validator.Validate
     sanitize    : Validator.Sanitize
@@ -6853,6 +6872,7 @@ declare class Validator {
     formatters  : Validator.Formatters
     configure(options: Object): void
     extend(rule : string, fn : Validator.ValidatorHandler) : void
+    ValidationException: Validator.ValidationException
 }
 
 declare namespace Ignitor {
@@ -8827,7 +8847,7 @@ declare namespace Lucid {
           * @return {Model|Null}
           * @return  
           */
-        first(): Promise<Model|null>;
+        first(): Promise<Model>;
             
         /**
           * Returns the latest row from the database.
@@ -8841,7 +8861,7 @@ declare namespace Lucid {
           * @param field 
           * @return  
           */
-        last(field : string): Promise<Model|null>;
+        last(field : string): Promise<Model>;
             
         /**
           * Throws an exception when unable to find the first
@@ -9445,7 +9465,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            save(relatedInstance :Object, trx? : any): Promise<boolean>;
+            save(relatedInstance :Object, trx? : Database.Transaction): Promise<boolean>;
                 
             /**
               * Creates the new related instance model and persist
@@ -9464,7 +9484,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            create(payload : Object, trx? : any): Promise<Model>;
+            create(payload : Object, trx? : Database.Transaction): Promise<Model>;
                 
             /**
               * istanbul ignore next
@@ -9493,7 +9513,7 @@ declare namespace Lucid {
               * @return {Object|Null}
               * @return  
               */
-            first(): Promise<Model|null>;
+            first(): Promise<Model>;
                 
             /**
               * Map values from model instances to an array. It is required
@@ -9596,7 +9616,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            associate(relatedInstance : Object, trx? : Object): Promise<boolean>;
+            associate(relatedInstance : Object, trx? : Database.Transaction): Promise<boolean>;
         }
 
         type pivotCallback = (Model:Model) => void;
@@ -9898,7 +9918,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            attach(references : Number | String | Array<String>, pivotCallback? : pivotCallback, trx? : Object): Promise<Object>;
+            attach(references : Number | String | Array<String>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<Object>;
                 
             /**
               * Delete related model rows in bulk and also detach
@@ -9943,7 +9963,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            detach(references : Array<String>, trx : Object): number;
+            detach(references : Array<String>, trx : Database.Transaction): number;
                 
             /**
               * Calls `detach` and `attach` together.
@@ -9959,7 +9979,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            sync(references : Number|String|Array<String>, pivotCallback? : pivotCallback, trx? : Object): Promise<void>;
+            sync(references : Number|String|Array<String>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<void>;
                 
             /**
               * Save the related model instance and setup the relationship
@@ -10107,7 +10127,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            save(relatedInstance : Object, trx? : Object): Promise<boolean>;
+            save(relatedInstance : Object, trx? : Database.Transaction): Promise<boolean>;
                 
             /**
               * Creates the new related instance model and persist
@@ -10123,7 +10143,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            create(payload : Object, trx? : Object): Promise<boolean>;
+            create(payload : Object, trx? : Database.Transaction): Promise<boolean>;
                 
             /**
               * Creates an array of model instances in parallel
@@ -10138,7 +10158,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            createMany(arrayOfPayload : Array<Object>, trx? : Object): Promise<boolean>;	
+            createMany(arrayOfPayload : Array<Object>, trx? : Database.Transaction): Promise<boolean>;	
 
             /**
               * Creates an array of model instances in parallel
@@ -10153,7 +10173,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            saveMany(arrayOfRelatedInstances : Array<Object>, trx? : Object): Promise<boolean>;	
+            saveMany(arrayOfRelatedInstances : Array<Object>, trx? : Database.Transaction): Promise<boolean>;	
         }
 
         /**
@@ -10356,7 +10376,7 @@ declare namespace Lucid {
           * @param trx 
           * @return  
           */
-        _insert(trx : Object): boolean;
+        _insert(trx : Database.Transaction): boolean;
             
         /**
           * Update model by updating dirty attributes to the database.
@@ -10370,7 +10390,7 @@ declare namespace Lucid {
           * @param trx 
           * @return  
           */
-        _update(trx : Object): boolean;
+        _update(trx : Database.Transaction): boolean;
             
         /**
           * Set attribute on model instance. Setting properties
@@ -10417,7 +10437,7 @@ declare namespace Lucid {
           * @param trx 
           * @return  
           */
-        save(trx : Object): Promise<boolean>;
+        save(trx : Database.Transaction): Promise<boolean>;
             
         /**
           * Deletes the model instance from the database. Also this
@@ -10830,7 +10850,7 @@ declare namespace Lucid {
           *
           * @return {Model} Model instance is returned
           */
-        create(payload : Object, trx? : Object): Promise<Model>;
+        create(payload : Object, trx? : Database.Transaction): Promise<Model>;
             
         /**
           * Returns the latest row from the database.
@@ -10856,7 +10876,7 @@ declare namespace Lucid {
           *
           * @throws {InvalidArgumentException} If payloadArray is not an array
           */
-        createMany(payloadArray : Array<Object>, trx? : Object): Promise<Array<Model>>;	
+        createMany(payloadArray : Array<Object>, trx? : Database.Transaction): Promise<Array<Model>>;	
 
         /**
           * Deletes all rows of this model (truncate table).
@@ -10877,7 +10897,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        find(value : string | number): Promise<Model|null>;
+        find(value : string | number): Promise<Model>;
             
         /**
           * Find a row using the primary key or
@@ -10905,7 +10925,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        findBy(key : string, value : string | number): Promise<Model|null>;
+        findBy(key : string, value : string | number): Promise<Model>;
             
         /**
           * Find a model instance using key/value pair or
@@ -10921,7 +10941,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        findByOrFail(key : string, value : string | number): Promise<Model|null>;
+        findByOrFail(key : string, value : string | number): Promise<Model>;
             
         /**
           * Returns the first row. This method will add orderBy asc
@@ -10932,7 +10952,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        first(): Promise<Model|null>;
+        first(): Promise<Model>;
             
         /**
           * Returns the first row or throw an exception.
@@ -10960,7 +10980,7 @@ declare namespace Lucid {
           *
           * @return {Model}
           */
-        findOrCreate(whereClause : Object, payload : Object, trx? : Object): Promise<Model>;
+        findOrCreate(whereClause : Object, payload : Object, trx? : Database.Transaction): Promise<Model>;
             
         /**
           * Find row from database or returns an instance of
@@ -11218,7 +11238,7 @@ declare namespace Lucid {
           * @param trx 
           * @return  
           */
-        save(trx : Object): void;
+        save(trx : Database.Transaction): void;
     }
 }
 
