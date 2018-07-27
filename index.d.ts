@@ -4404,6 +4404,14 @@ interface Route extends Macroable {
         name: string
         domain?: RegExp
     }
+
+    /**
+     * Extend route class by adding a macro, which pushes a
+     * middleware to the route middleware stack and
+     * validates the request via validator
+     * class
+     */
+    validator(validatorClass: string): Route;
 }
 
 declare namespace Route {
@@ -4682,6 +4690,12 @@ declare namespace Route {
           * @type {String}
           */
         prefix : string;
+
+        /**
+         * Adding resource macro to apply validator on
+         * route resource
+         */
+        validator(validatorsMap: Map<string[], string[]>): Resource;
     }
 
     class Manager {
