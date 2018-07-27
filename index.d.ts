@@ -6912,6 +6912,75 @@ declare namespace Validator {
             'trim'
         ]: Sanitizor
     }
+
+    /**
+     * Since haye pipe expression cannot allow all the keywords, this
+     * method helps in defining rules in a raw format.
+     *
+     * ## Note
+     * When using `rule` method, you cannot make use of string expression
+     * for that field. However, you can mix both for different fields.
+     *
+     * @param  {String}              name
+     * @param  {Array|String|Number} args
+     * @return {Object}
+     *
+     * @example
+     * {
+     *   username: [
+     *    rule('required'),
+     *    rule('alpha')
+     *   ],
+     *   email: 'email'
+     * }
+     */
+    type RuleName = 
+        "required" |
+        "above" |
+        "accepted" |
+        "after" |
+        "afterOffsetOf" |
+        "alpha" |
+        "alphaNumeric" |
+        "array" |
+        "before" |
+        "beforeOffsetOf" |
+        "boolean" |
+        "confirmed" |
+        "date" |
+        "dateFormat" |
+        "different" |
+        "email" |
+        "endsWith" |
+        "equals" |
+        "in" |
+        "includes" |
+        "integer" |
+        "ip" |
+        "ipv4" |
+        "ipv6" |
+        "json" |
+        "max" |
+        "min" |
+        "notEquals" |
+        "notIn" |
+        "number" |
+        "object" |
+        "range" |
+        "regex" |
+        "required" |
+        "requiredIf" |
+        "requiredWhen" |
+        "requiredWithAll" |
+        "requiredWithAny" |
+        "requiredWithoutAll" |
+        "requiredWithoutAny" |
+        "same" |
+        "startsWith" |
+        "string" |
+        "under" |
+        "url";
+    type Rule = (name: RuleName, args?: any) => Object;
     
     /**
      * Exception to throw when validation fails
@@ -6928,7 +6997,7 @@ declare interface Validator {
     validateAll : Validator.Validate
     validate    : Validator.Validate
     sanitize    : Validator.Sanitize
-
+    rule        : Validator.Rule;
     is          : Validator.IsRaw
     sanitizor   : Validator.SanitizorRaw
     formatters  : Validator.Formatters
