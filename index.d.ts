@@ -2306,6 +2306,54 @@ declare namespace Http {
           */
         body : string;
     }
+
+    //node-res
+    type nodeRes = {
+        [key in 
+            'continue'                     |
+            'switchingProtocols'           |
+            'ok'                           |
+            'created'                      |
+            'accepted'                     |
+            'nonAuthoritativeInformation'  |
+            'noContent'                    |
+            'resetContent'                 |
+            'partialContent'               |
+            'multipleChoices'              |
+            'movedPermanently'             |
+            'found'                        |
+            'seeOther'                     |
+            'notModified'                  |
+            'useProxy'                     |
+            'temporaryRedirect'            |
+            'badRequest'                   |
+            'unauthorized'                 |
+            'paymentRequired'              |
+            'forbidden'                    |
+            'notFound'                     |
+            'methodNotAllowed'             |
+            'notAcceptable'                |
+            'proxyAuthenticationRequired'  |
+            'requestTimeout'               |
+            'conflict'                     |
+            'gone'                         |
+            'lengthRequired'               |
+            'preconditionFailed'           |
+            'requestEntityTooLarge'        |
+            'requestUriTooLong'            |
+            'unsupportedMediaType'         |
+            'requestedRangeNotSatisfiable' |
+            'expectationFailed'            |
+            'unprocessableEntity'          |
+            'tooManyRequests'              |
+            'internalServerError'          |
+            'notImplemented'               |
+            'badGateway'                   |
+            'serviceUnavailable'           |
+            'gatewayTimeout'               |
+            'httpVersionNotSupported'
+        ]: (content: any, generateEtag: string) => void
+    };
     
     /**
       * A facade over Node.js HTTP `res` object, making it
@@ -2318,7 +2366,7 @@ declare namespace Http {
       * 
       * @class Response
       */
-    interface Response extends Macroable {
+    interface Response extends Macroable, nodeRes {
         /**
           * Reference to adonisjs request
           *
@@ -6775,7 +6823,7 @@ declare namespace Validator {
         toJSON(): Array<any>
     }
 
-    type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Object) => Promise<Validation>;
+    type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Validator.Formatter) => Promise<Validation>;
     type Sanitize = (data: Object, rules: Object) => Object;
     type Formatters = { Vanilla: Validator.Formatter, JsonApi: Validator.Formatter };
     type ValidatorHandler = <T>(data: Object, field: string, message: string, args: Array<T>, get: (obj: Object, path: string) => any) => Promise<void>;
