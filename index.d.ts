@@ -6837,7 +6837,9 @@ declare namespace Validator {
         toJSON(): Array<any>
     }
 
-    type Validate = (data: Object, rules: Object, messages?: Object, formatter?: Validator.Formatter) => Promise<Validation>;
+    type MessageHandler = (field: String, validation: String, args: Array<any>) => String;
+    type Messages = { [key in string]: String | MessageHandler };
+    type Validate = (data: Object, rules: Object, messages?: Validator.Messages, formatter?: Validator.Formatter) => Promise<Validation>;
     type Sanitize = (data: Object, rules: Object) => Object;
     type Formatters = { Vanilla: Validator.Formatter, JsonApi: Validator.Formatter };
     type ValidatorHandler = <T>(data: Object, field: string, message: string, args: Array<T>, get: (obj: Object, path: string) => any) => Promise<void>;
@@ -6935,51 +6937,52 @@ declare namespace Validator {
      * }
      */
     type RuleName = 
-        "required" |
-        "above" |
-        "accepted" |
-        "after" |
-        "afterOffsetOf" |
-        "alpha" |
-        "alphaNumeric" |
-        "array" |
-        "before" |
-        "beforeOffsetOf" |
-        "boolean" |
-        "confirmed" |
-        "date" |
-        "dateFormat" |
-        "different" |
-        "email" |
-        "endsWith" |
-        "equals" |
-        "in" |
-        "includes" |
-        "integer" |
-        "ip" |
-        "ipv4" |
-        "ipv6" |
-        "json" |
-        "max" |
-        "min" |
-        "notEquals" |
-        "notIn" |
-        "number" |
-        "object" |
-        "range" |
-        "regex" |
-        "required" |
-        "requiredIf" |
-        "requiredWhen" |
-        "requiredWithAll" |
-        "requiredWithAny" |
+        "required"           |
+        "above"              |
+        "accepted"           |
+        "after"              |
+        "afterOffsetOf"      |
+        "alpha"              |
+        "alphaNumeric"       |
+        "array"              |
+        "before"             |
+        "beforeOffsetOf"     |
+        "boolean"            |
+        "confirmed"          |
+        "date"               |
+        "dateFormat"         |
+        "different"          |
+        "email"              |
+        "endsWith"           |
+        "equals"             |
+        "in"                 |
+        "includes"           |
+        "integer"            |
+        "ip"                 |
+        "ipv4"               |
+        "ipv6"               |
+        "json"               |
+        "max"                |
+        "min"                |
+        "notEquals"          |
+        "notIn"              |
+        "number"             |
+        "object"             |
+        "range"              |
+        "regex"              |
+        "required"           |
+        "requiredIf"         |
+        "requiredWhen"       |
+        "requiredWithAll"    |
+        "requiredWithAny"    |
         "requiredWithoutAll" |
         "requiredWithoutAny" |
-        "same" |
-        "startsWith" |
-        "string" |
-        "under" |
-        "url";
+        "same"               |
+        "startsWith"         |
+        "string"             |
+        "under"              |
+        "url"                |
+        "unique";
     type Rule = (name: RuleName, args?: any) => Object;
     
     /**
@@ -8752,7 +8755,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        createdAtColumn : string;
+        createdAtColumn : string | null;
             
         /**
           * The attribute name for updated at timestamp.
@@ -8763,7 +8766,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        updatedAtColumn : string;
+        updatedAtColumn : string | null;
             
         /**
           * The database connection to be used for
