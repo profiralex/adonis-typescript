@@ -3992,7 +3992,7 @@ declare namespace Auth {
          * @param duration? 
          * @return  
          */
-        remember(duration? : string | number): this;
+        remember(duration? : string | number | boolean): this;
             
         /**
          * Attempt to login the user using `username` and `password`. An
@@ -5465,11 +5465,6 @@ interface Server {
       * @return  
       */
     close(callback : Function): void;
-        
-    /**
-      * 
-      */
-    _exceptionHandlerNamespace : string;
 }
 
 /**
@@ -5503,7 +5498,7 @@ declare class View {
       *
       * @attribute BasePresenter
       */
-    BasePresenter: Object;
+    BasePresenter: View.BasePresenter;
     /**
       * Register global with the view engine.
       *
@@ -5896,15 +5891,161 @@ declare namespace View {
         tagName: string
         compile(
             compiler: Object,
-            lexer: Object,
-            buffer: Object,
+            lexer   : Object,
+            buffer  : Object,
             options: {
-                body: string
+                body  : string
                 childs: any[]
                 lineno: number
             }
         ): void
-        run(): void
+        run(Context: Context): void
+    }
+
+    /**
+     * The base presenter class to be used for creating
+     * custom presenters. It simply merges the data
+     * and locals together and set `$data` property
+     * to be consumed by context internally.
+     *
+     * @class BasePresenter
+     */
+    interface BasePresenter {
+        $data : any;
+    }
+
+    /**
+     * Runtime context used to run the compiled
+     * templates. View **locals**, **globals**,
+     * and **presenter** all are accessible
+     * from the context.
+     * 
+     * Values are resolved in following order.
+     * 
+     * 1. Frames
+     * 2. Presenter
+     * 3. Data/Locals
+     * 4. Globals
+     * 
+     * @class Context
+     * 
+     * @constructor
+     */
+    interface Context {
+
+        /**
+         * Pushes a new frame to the frames array.
+         * 
+         * @method newFrame
+         * 
+         * @return {void}
+         * @return  
+         */
+        newFrame(): void;
+            
+        /**
+         * Sets the value on the most recent frame.
+         * 
+         * @method setOnFrame
+         * 
+         * @param  {String}   key
+         * @param  {Mixed}   value
+         * 
+         * @throws {Exception} If trying to set value without calling the `newFrame` method.
+         * @param key 
+         * @param value 
+         */
+        setOnFrame(key : string, value : any): void;
+            
+        /**
+         * Clears the most recent frame.
+         * 
+         * @method clearFrame
+         * 
+         * @return {void}
+         * @return  
+         */
+        clearFrame(): void;
+            
+        /**
+         * Access a child from the hash
+         * 
+         * @method accessChild
+         * 
+         * @param  {Array|Object}    hash
+         * @param  {Array}    childs
+         * 
+         * @return {Mixed}
+         * 
+         * @example
+         * ```
+         * const users = [{username: 'foo'}]
+         * const username = accessChild(users, ['0', 'username'])
+         * ```
+         * @param hash 
+         * @param childs 
+         * @param i 
+         * @return  
+         */
+        accessChild(hash : Array<any> | Object, childs : Array<String>, i? : number): any;
+    
+        /**
+         * Escapes the input by sanitizing HTML.
+         * 
+         * @method escape
+         * 
+         * @param  {String} input
+         * 
+         * @return {String}
+         * @param input 
+         * @return  
+         */
+        escape(input : string): string;
+            
+        /**
+         * Resolves a key in following order.
+         * 
+         * 1. frame
+         * 2. presenter
+         * 3. presenter data/locals
+         * 4. global
+         * 
+         * @method resolve
+         * 
+         * @param  {String} key
+         * 
+         * @return {Mixed}
+         * @param key 
+         * @return  
+         */
+        resolve(key : string): string;
+            
+        /**
+         * Calls a function and pass the arguments. Also the
+         * function scope will be changed to context scope.
+         * 
+         * @method callFn
+         * 
+         * @param  {String} name
+         * @param  {Array} args
+         * 
+         * @return {Mixed}
+         * @param name 
+         * @param args 
+         * @return  
+         */
+        callFn(name : string, args : Array<any>): any;
+
+        /**
+         * 
+         * @param name 
+         * @param fn 
+         */
+        macro(name : string, fn : Function): void;
+        
+        $viewName: string;
+        $globals : Object;
+        $presenter: BasePresenter;
     }
 }
 
@@ -12760,7 +12901,6 @@ interface Formats {
 	 */
 	pass(format : string, type : string): Object;
 }
-
 
 declare namespace AdonisNamespaces {
     type Command = 'Command' | 'Adonis/Src/Command'
