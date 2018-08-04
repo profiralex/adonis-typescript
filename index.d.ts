@@ -857,7 +857,7 @@ interface Encryption {
      * @param encodedText 
      * @return  
      */
-    base64Decode(encodedText : string | {}): string;
+    base64Decode(encodedText : string | Buffer): string;
 }
 
 type ExceptionHandler = (error: any, ctx: Http.Context) => void
@@ -1123,13 +1123,13 @@ interface FileInformation {
 }
 
 interface FileOptions {
-    types    : string[],
-    extnames : string[],
-    size     : string | number,
+    types?    : string[],
+    extnames? : string[],
+    size?     : string | number,
 }
 
 interface MoveOptions {
-    name ?: string,
+    name? : string,
 }
 
 type moveCallback = (file: File, index: number) => MoveOptions;
@@ -2801,9 +2801,9 @@ declare namespace Http {
           * 
           * @method abortIf
           * 
-          * @param  {Mixed} expression
-          * @param  {Number} status
-          * @param  {Mixed} body
+          * @param  {Mixed} expression 
+          * @param  {Number} status [status = 400]
+          * @param  {Mixed} body [body = 'Request aborted']
           * 
           * @return {void}
           * 
@@ -2813,7 +2813,7 @@ declare namespace Http {
           * @param body 
           * @return  
           */
-        abortIf(expression : any, status : number, body : any): void;
+        abortIf(expression : any, status? : number, body? : any): void;
             
         /**
           * Aborts the request (when expression is falsy) by throwing an exception.
@@ -2823,8 +2823,8 @@ declare namespace Http {
           * @method abortUnless
           * 
           * @param  {Mixed} expression
-          * @param  {Number} status
-          * @param  {Mixed} body
+          * @param  {Number} status [status = 400]
+          * @param  {Mixed} body [body = 'Request aborted']
           * 
           * @return {void}
           * 
@@ -2834,7 +2834,7 @@ declare namespace Http {
           * @param body 
           * @return  
           */
-        abortUnless(expression : any, status : number, body : any): void;
+        abortUnless(expression : any, status? : number, body? : any): void;
     }
 
     class Session {
@@ -6018,7 +6018,7 @@ declare namespace View {
          * @param key 
          * @return  
          */
-        resolve(key : string): string;
+        resolve(key : string): any;
             
         /**
          * Calls a function and pass the arguments. Also the
@@ -6983,7 +6983,7 @@ declare namespace Validator {
     type Validate = (data: Object, rules: Object, messages?: Validator.Messages, formatter?: Validator.Formatter) => Promise<Validation>;
     type Sanitize = (data: Object, rules: Object) => Object;
     type Formatters = { Vanilla: Validator.Formatter, JsonApi: Validator.Formatter };
-    type ValidatorHandler = <T>(data: Object, field: string, message: string, args: Array<T>, get: (obj: Object, path: string) => any) => Promise<void>;
+    type ValidatorHandler = (data: Object, field: string, message: string, args: Array<any>, get: (obj: Object, path: string) => any) => Promise<any>;
 
     type Is = (data: string | number) => boolean;
     type IsRaw = {
@@ -10712,7 +10712,7 @@ declare namespace Lucid {
           * @param trx 
           * @return  
           */
-        save(trx : Database.Transaction): Promise<boolean>;
+        save(trx? : Database.Transaction): Promise<boolean>;
             
         /**
           * Deletes the model instance from the database. Also this
@@ -11515,6 +11515,18 @@ declare namespace Lucid {
           */
         save(trx : Database.Transaction): void;
     }
+
+    /**
+     * Hooks into suite lifcycle and run database
+     * queries inside transactions
+     *
+     * @method exports
+     *
+     * @param  {Object} suite
+     *
+     * @return {void}
+     */
+    type DatabaseTransactions = (suite: Suite) => void;
 }
 
 /**
@@ -12397,6 +12409,23 @@ interface Drive {
       * @return  
       */
     copy(src : string, dest : string, options : Object): boolean;
+
+    /**
+     * Register a custom driver.
+     *
+     * @param  {string} name
+     * @param  {mixed} handler
+     * @return {this}
+     */
+    extend(name: string, handler: any): Drive;
+
+    /**
+     * Get a disk instance.
+     *
+     * @param  {string} name
+     * @return {object}
+     */
+    disk(name: string): any;
 }
 
 
@@ -12921,7 +12950,7 @@ declare namespace AdonisNamespaces {
     type Schema = 'Schema' | 'Adonis/Src/Schema'
     type Server = 'Server' | 'Adonis/Src/Server'
     type View = 'View' | 'Adonis/Src/View'
-    type Validator = 'Validator'
+    type Validator = 'Validator' | 'Adonis/Addons/Validator'
     type BaseExceptionHandler = 'BaseExceptionHandler' | "Adonis/Exceptions/BaseExceptionHandler"
     type Migration = 'Migration' | 'Adonis/Src/Migration'
     type Request = 'Adonis/Src/Request'
@@ -12934,6 +12963,7 @@ declare namespace AdonisNamespaces {
     type Test = 'Suite' | 'Test/Suite'
     type Antl = 'Antl' | 'Adonis/Addons/Antl'
     type AntlFormats = 'Antl/Formats' | 'Adonis/Addons/Antl/Formats'
+    type DatabaseTransactions = 'DatabaseTransactions' | 'Adonis/Traits/DatabaseTransactions'
 }
 
 declare global {
@@ -12967,7 +12997,8 @@ declare global {
     function use(namespace: AdonisNamespaces.Logger): Logger
     function use(namespace: AdonisNamespaces.Antl): Antl
     function use(namespace: AdonisNamespaces.AntlFormats): Formats
-    
+    function use(namespace: AdonisNamespaces.DatabaseTransactions): Lucid.DatabaseTransactions;
+
 }
 
 declare global {
@@ -13001,6 +13032,7 @@ declare global {
     function make(namespace: AdonisNamespaces.Logger): Logger
     function make(namespace: AdonisNamespaces.Antl): Antl
     function make(namespace: AdonisNamespaces.AntlFormats): Formats
+    function make(namespace: AdonisNamespaces.DatabaseTransactions): Lucid.DatabaseTransactions;
 
     const iocResolver : Fold.ResolverManager;
 }
