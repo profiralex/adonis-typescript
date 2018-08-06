@@ -6717,7 +6717,6 @@ declare namespace Database {
     //
     // Configurations
     //
-
     interface ColumnInfo {
         defaultValue: Value;
         type: string;
@@ -6731,67 +6730,67 @@ declare namespace Database {
 
     interface Builder {
         //MonkeyPatch.js
-        returning(column: string | string[]): Database.Builder
-        from(table: string): Database.Builder
-        table(table: string): Database.Builder
-        into(table: string): Database.Builder
-        withOutPrefix(): Database.Builder
+        returning(column: string | string[]): this
+        from(table: string): this
+        table(table: string): this
+        into(table: string): this
+        withOutPrefix(): this
 
-        select(column: string): Database.Builder
-        select(...columns: string[]): Database.Builder
+        select(column: string): this
+        select(...columns: string[]): this
 
-        where(column: string, value: any): Database.Builder
-        where(column: string, operator: string, value: any): Database.Builder
-        where(condition: Object): Database.Builder
-        where(callback: Function): Database.Builder
-        where(subquery: Database.Builder): Database.Builder
-        whereNot(column: string, value: any): Database.Builder
-        whereNot(column: string, operator: string, value: any): Database.Builder
-        whereNot(condition: Object): Database.Builder
-        whereNot(subquery: Database.Builder): Database.Builder
-        whereIn(column: string, params: any[]): Database.Builder
-        whereIn(column: string, subquery: Database.Builder): Database.Builder
-        whereNotIn(column: string, params: any[]): Database.Builder
-        whereNotIn(column: string, subquery: Database.Builder): Database.Builder
-        whereNull(column: string): Database.Builder
-        whereNotNull(column: string): Database.Builder
-        whereExists(callback: Function): Database.Builder
-        whereNotExists(callback: Function): Database.Builder
-        whereBetween(column: string, params: number[]): Database.Builder
-        whereNotBetween(column: string, params: number[]): Database.Builder
-        whereRaw(exp: string, params: Database.SimpleAny[]): Database.Builder
+        where(column: string, value: any): this
+        where(column: string, operator: string, value: any): this
+        where(condition: Object): this
+        where(callback: Function): this
+        where(subquery: this): this
+        whereNot(column: string, value: any): this
+        whereNot(column: string, operator: string, value: any): this
+        whereNot(condition: Object): this
+        whereNot(subquery: this): this
+        whereIn(column: string, params: any[]): this
+        whereIn(column: string, subquery: this): this
+        whereNotIn(column: string, params: any[]): this
+        whereNotIn(column: string, subquery: this): this
+        whereNull(column: string): this
+        whereNotNull(column: string): this
+        whereExists(callback: Function): this
+        whereNotExists(callback: Function): this
+        whereBetween(column: string, params: number[]): this
+        whereNotBetween(column: string, params: number[]): this
+        whereRaw(exp: string, params?: Database.SimpleAny[]): this
 
-        innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        innerJoin(table: string, callback: Function): Database.Builder
-        leftJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        leftOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        rightJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        rightOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        outerJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        fullOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        crossJoin(table: string, leftSideCondition: string, rightSideCondition: string): Database.Builder
-        joinRaw(condition: string): Database.Builder
+        innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        innerJoin(table: string, callback: Function): this
+        leftJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        leftOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        rightJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        rightOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        outerJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        fullOuterJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        crossJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
+        joinRaw(condition: string): this
 
-        distinct(column: string): Database.Builder
-        groupBy(column: string): Database.Builder
-        groupByRaw(exp: string): Database.Builder
+        distinct(column: string): this
+        groupBy(column: string): this
+        groupByRaw(exp: string): this
         
-        orderBy(column: string, direction?: Database.Direction): Database.Builder
-        orderByRaw(exp: string): Database.Builder
+        orderBy(column: string, direction?: Database.Direction): this
+        orderByRaw(exp: string): this
 
-        having(column: string, operator: string, value: any): Database.Builder
-        havingIn(column: string, params: any[]): Database.Builder
-        havingNotIn(column: string, params: any[]): Database.Builder
-        havingNull(column: string): Database.Builder
-        havingNotNull(column: string): Database.Builder
-        havingExists(subquery:Database.Builder): Database.Builder
-        havingExists(callback: Function): Database.Builder
-        havingNotExists(subquery:Database.Builder): Database.Builder
-        havingNotExists(callback: Function): Database.Builder
-        havingRaw(column: string, operator: string, value: Database.SimpleAny[]): Database.Builder
+        having(column: string, operator: string, value: any): this
+        havingIn(column: string, params: any[]): this
+        havingNotIn(column: string, params: any[]): this
+        havingNull(column: string): this
+        havingNotNull(column: string): this
+        havingExists(subquery:this): this
+        havingExists(callback: Function): this
+        havingNotExists(subquery:this): this
+        havingNotExists(callback: Function): this
+        havingRaw(column: string, operator: string, value: Database.SimpleAny[]): this
 
-        offset(offset: number): Database.Builder
-        limit(limit: number): Database.Builder
+        offset(offset: number): this
+        limit(limit: number): this
 
         insert(row: Object): NumberResults
         insert(rows: Object[]): NumberResults
@@ -6837,19 +6836,19 @@ declare namespace Database {
         map<T, R>(callback: (row: T | Object) => R): Promise<R[]> 
         reduce<T, S>(reducer: (acc: S, row: T) => S, initValue: S): Promise<S>
 
-        clone(): Database.Builder;
-        columnInfo(): Promise<Object>
+        clone(): this;
+        columnInfo(): Promise<ColumnInfo>
 
         raw<T>(expression: string, params?: Database.SimpleAny[]): Promise<T[]>
 
         asCallback<T>(callback: (err: Object, rows: T[]) => void): void
         stream(callback: any): Object
-        on(event: string, callback: Function): Database.Builder
+        on(event: string, callback: Function): this
         toSQL(): Sql
         toString(): string
 
-        then(callback: (response: any) => void): Database.Builder
-        catch(callback: (error: any) => void): Database.Builder
+        then(callback: (response: any) => void): this
+        catch(callback: (error: any) => void): this
     }
 }
 
@@ -9508,7 +9507,7 @@ declare namespace Lucid {
           * methodList to be added to the query
           * method redirect Database.Builder
           */
-        type baseMethod = 
+        type methodsList = 
             'increment'        |
             'decrement'        |
             'sum'              |
@@ -9527,9 +9526,7 @@ declare namespace Lucid {
             'getMax'           |
             'getCount'         |
             'getCountDistinct' |
-            'truncate';
-
-        type queryMethod =             
+            'truncate'         |
             'ids'              |
             'paginate'         |
             'pair'             |
@@ -9542,7 +9539,8 @@ declare namespace Lucid {
             'first'            |
             'fetch'            |
             'toSQL'            |
-            'toString'
+            'toString';
+
         /**
           * Base relation is supposed to be extended by other
           * relations. It takes care of commonly required
@@ -9551,7 +9549,7 @@ declare namespace Lucid {
           * @class BaseRelation
           * @constructor
           */
-        interface BaseRelation extends Pick<Database.Builder, baseMethod>, Pick<QueryBuilder, queryMethod> {
+        interface BaseRelation extends Pick<QueryProxy, methodsList>, QueryProxy {
             /**
               * 
               * @param parentInstance 
@@ -9560,13 +9558,13 @@ declare namespace Lucid {
               * @param foreignKey 
               * @return  
               */
-            new(parentInstance: Object, RelatedModel: string | Object, primaryKey: string, foreignKey: string): BaseRelation;
+            new(parentInstance: Lucid.Model, RelatedModel: Lucid.Model, primaryKey?: string, foreignKey?: string): BaseRelation;
                 
-            parentInstance : Object
-            RelatedModel   : string
+            parentInstance : Lucid.Model
+            RelatedModel   : Lucid.Model
             primaryKey     : string
             foreignKey     : string
-            relatedQuery   : QueryBuilder
+            relatedQuery   : QueryProxy
 
             /**
               * Define a custom eagerload query.
@@ -9788,7 +9786,7 @@ declare namespace Lucid {
               * @return {Object|Null}
               * @return  
               */
-            first(): Promise<Model>;
+            first<T>(): Promise<T>;
                 
             /**
               * Map values from model instances to an array. It is required
@@ -10470,7 +10468,7 @@ declare namespace Lucid {
             new(parentInstance: Object, RelatedModel: Object, relatedMethod: string, primaryKey: string, foreignKey: string): HasManyThrough;
 
             _relatedModelRelation : Object
-            relatedQuery          : QueryBuilder
+            relatedQuery          : QueryProxy
             _relatedFields        : Array<string>
             _throughFields        : Array<string>
             _fields               : Array<string>
@@ -10486,7 +10484,7 @@ declare namespace Lucid {
               * @param columns 
               * @return  
               */
-            select(columns : Array<string>): this;
+            select(...columns: string[]): this;
                 
             /**
               * Select fields from the through table.
@@ -10499,7 +10497,7 @@ declare namespace Lucid {
               * @param columns 
               * @return  
               */
-            selectThrough(columns : Array<string>): this;
+            selectThrough(...columns: string[]): this;
                 
             /**
               * Select fields from the related table
@@ -10512,7 +10510,7 @@ declare namespace Lucid {
               * @param columns 
               * @return  
               */
-            selectRelated(columns : Array<string>): this;
+            selectRelated(...columns: string[]): this;
                 
             /**
               * Returns an array of values to be used for running
@@ -10590,7 +10588,7 @@ declare namespace Lucid {
         }
     }
 
-    type queryProxy = Overwrite<QueryBuilder, Overwrite<Database.QueryInterface, Database.Builder>>;
+    type QueryProxy = Overwrite<QueryBuilder, Overwrite<Database.QueryInterface, Database.Builder>>;
 
     /**
       * Lucid model is a base model and supposed to be
@@ -11028,7 +11026,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        query(): queryProxy;
+        query(): QueryProxy;
             
         /**
           * Returns a query builder without any global scopes
@@ -11037,7 +11035,7 @@ declare namespace Lucid {
           *
           * @return {QueryBuilder}
           */
-        queryWithOutScopes(): queryProxy;
+        queryWithOutScopes(): QueryProxy;
             
         /**
           * Define a query macro to be added to query builder.
