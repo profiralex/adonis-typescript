@@ -9549,7 +9549,7 @@ declare namespace Lucid {
           * @class BaseRelation
           * @constructor
           */
-        interface BaseRelation extends Pick<QueryProxy, methodsList>, QueryProxy {
+        interface BaseRelation extends QueryProxy {
             /**
               * 
               * @param parentInstance 
@@ -9694,7 +9694,7 @@ declare namespace Lucid {
               * @return {Model}
               * @return  
               */
-            fetch(): Promise<any>;
+            fetch<T>(): Promise<T>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -9825,7 +9825,7 @@ declare namespace Lucid {
               * @return {Object}
               * @return  
               */
-            fetch(): Promise<any>;
+            fetch<T>(): Promise<T>;
                 
             /**
               * Adds a where clause to limit the select search
