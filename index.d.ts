@@ -10589,6 +10589,18 @@ declare namespace Lucid {
     }
 
     type QueryProxy = Overwrite<QueryBuilder, Overwrite<Database.QueryInterface, Database.Builder>>;
+    type ModelEvent = 
+            "beforeCreate" |
+            "afterCreate"  |
+            "beforeUpdate" |
+            "afterUpdate"  |
+            "beforeSave"   |
+            "afterSave"    |
+            "beforeDelete" |
+            "afterDelete"  |
+            "afterFind"    |
+            "afterFetch"   |
+            "afterPaginate";
 
     /**
       * Lucid model is a base model and supposed to be
@@ -11071,7 +11083,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        addHook(forEvent: string, handlers: (params: Object) => any | String | Array<any>): this;
+        addHook(forEvent: ModelEvent, handlers: ((params: any) => void) | String | Array<any>): this;
             
         /**
           * Adds the global scope to the model global scopes.
