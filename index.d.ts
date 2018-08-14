@@ -1793,7 +1793,7 @@ declare namespace Http {
           * @param defaultValue? 
           * @return  
           */
-        input(key : string, defaultValue? : string): any;
+        input(key : string, defaultValue? : any): any;
             
         /**
           * Returns everything from request body and query
@@ -6742,7 +6742,7 @@ declare namespace Database {
         where(column: string, value: any): this
         where(column: string, operator: string, value: any): this
         where(condition: Object): this
-        where(callback: Function): this
+        where(callback: QueryCallback): this
         where(subquery: this): this
         whereNot(column: string, value: any): this
         whereNot(column: string, operator: string, value: any): this

@@ -1,4 +1,4 @@
-import { Redis, Fold } from "adonis";
+import { Redis, Fold } from "@adonisjs";
 //https://github.com/helnokaly/adonis-cache
 declare namespace Cache {
     interface Repository {

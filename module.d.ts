@@ -1,6 +1,6 @@
 //module exports
 declare module '@adonisjs/ignitor' {
-    import { Ignitor } from "adonis";
+    import { Ignitor } from "@adonisjs";
     const hooks: { before: Ignitor.Hooks, after: Ignitor.Hooks };
     const Ignitor: Ignitor;
     const Helpers: Ignitor.Helpers;
@@ -8,7 +8,7 @@ declare module '@adonisjs/ignitor' {
 }
 
 declare module '@adonisjs/fold' {
-    import { Fold } from "adonis"
+    import { Fold } from "@adonisjs"
     const ioc : Fold.Ioc;
     const ServiceProvider : Fold.ServiceProvider;
     const registrar : Fold.Registrar;
