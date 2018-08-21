@@ -6246,7 +6246,7 @@ interface Database extends DatabaseManager, Database.Builder {
       *
       * @return {Object}
       */
-    query(): Database.Builder
+    query(): Lucid.QueryProxy
 
     /**
       * Closes the database connection. No more queries
@@ -8657,7 +8657,7 @@ declare namespace Lucid {
           *
           * @type {Array}
           */
-        rows: Array<Object>
+        rows: Array<any>
 
         /**
           * The pagination meta data
@@ -8684,7 +8684,7 @@ declare namespace Lucid {
           * @param pages 
           * @param isOne 
           */
-        new(rows: Array<Object>, pages?: null, isOne?: false): VanillaSerializer;
+        new(rows: Array<any>, pages?: null, isOne?: false): VanillaSerializer;
     
         /**
           * Add row to the list of rows. Make sure the row
@@ -10236,7 +10236,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            detach(references : Array<String>, trx : Database.Transaction): number;
+            detach(references : Array<String>, trx? : Database.Transaction): number;
                 
             /**
               * Calls `detach` and `attach` together.
