@@ -6743,7 +6743,7 @@ declare namespace Database {
         where(column: string, operator: string, value: any): this
         where(condition: Object): this
         where(callback: QueryCallback): this
-        where(subquery: this): this
+        where(subquery: Builder): this
         whereNot(column: string, value: any): this
         whereNot(column: string, operator: string, value: any): this
         whereNot(condition: Object): this
