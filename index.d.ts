@@ -8657,7 +8657,7 @@ declare namespace Lucid {
           *
           * @type {Array}
           */
-        rows: Array<Object>
+        rows: Array<any>
 
         /**
           * The pagination meta data
@@ -8684,7 +8684,7 @@ declare namespace Lucid {
           * @param pages 
           * @param isOne 
           */
-        new(rows: Array<Object>, pages?: null, isOne?: false): VanillaSerializer;
+        new(rows: Array<any>, pages?: null, isOne?: false): VanillaSerializer;
     
         /**
           * Add row to the list of rows. Make sure the row
