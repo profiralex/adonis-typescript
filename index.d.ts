@@ -6246,7 +6246,7 @@ interface Database extends DatabaseManager, Database.Builder {
       *
       * @return {Object}
       */
-    query(): Database.Builder
+    query(): Lucid.QueryProxy
 
     /**
       * Closes the database connection. No more queries
@@ -6743,7 +6743,7 @@ declare namespace Database {
         where(column: string, operator: string, value: any): this
         where(condition: Object): this
         where(callback: QueryCallback): this
-        where(subquery: this): this
+        where(subquery: Builder): this
         whereNot(column: string, value: any): this
         whereNot(column: string, operator: string, value: any): this
         whereNot(condition: Object): this
@@ -10236,7 +10236,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            detach(references : Array<String>, trx : Database.Transaction): number;
+            detach(references : Array<String>, trx? : Database.Transaction): number;
                 
             /**
               * Calls `detach` and `attach` together.
