@@ -8647,7 +8647,7 @@ declare namespace Lucid {
       * @class VanillaSerializer
       * @constructor
       */
-    interface VanillaSerializer {
+    interface VanillaSerializer<T extends Model> {
 
         /**
           * The serializer rows. All rows should be instance
@@ -8657,7 +8657,7 @@ declare namespace Lucid {
           *
           * @type {Array}
           */
-        rows: Array<any>
+        rows: Array<T>
 
         /**
           * The pagination meta data
@@ -8684,7 +8684,7 @@ declare namespace Lucid {
           * @param pages 
           * @param isOne 
           */
-        new(rows: Array<any>, pages?: null, isOne?: false): VanillaSerializer;
+        new(rows: Array<T>, pages?: null, isOne?: false): VanillaSerializer<T>;
     
         /**
           * Add row to the list of rows. Make sure the row
@@ -8693,20 +8693,20 @@ declare namespace Lucid {
           * 
           * @method addRow
           * 
-          * @param  {Model} row
+          * @param  {T} row
           * @param row 
           */
-        addRow(row : Model): void;
+        addRow(row : T): void;
             
         /**
           * Get first model instance
           * 
           * @method first
           * 
-          * @return {Model}
+          * @return {T/Null}
           * @return  
           */
-        first(): Model;
+        first(): T | null;
             
         /**
           * Returns the row for the given index
@@ -8715,21 +8715,21 @@ declare namespace Lucid {
           * 
           * @param  {Number} index
           * 
-          * @return {Model|Null}
+          * @return {T|Null}
           * @param index 
           * @return  
           */
-        nth(index : number): Model | null;
+        nth(index : number): T | null;
             
         /**
           * Get last model instance
           * 
           * @method last
           * 
-          * @return {Model}
+          * @return {T|Null}
           * @return  
           */
-        last(): Model;
+        last(): T | null;
             
         /**
           * Returns the size of rows
@@ -8750,10 +8750,10 @@ declare namespace Lucid {
           * @return {Array|Object}
           * @return  
           */
-        toJSON(): Array<Object> | Object;
+        toJSON(): Array<any> | any;
     }
 
-    type Serializer = VanillaSerializer;
+    type Serializer<T extends Model> = VanillaSerializer<T>;
 
     /**
       * The base model to share attributes with Lucid
