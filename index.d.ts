@@ -6246,7 +6246,7 @@ interface Database extends DatabaseManager, Database.Builder {
       *
       * @return {Object}
       */
-    query(): Lucid.QueryProxy
+    query(): Lucid.QueryProxy<any>
 
     /**
       * Closes the database connection. No more queries
@@ -8647,7 +8647,7 @@ declare namespace Lucid {
       * @class VanillaSerializer
       * @constructor
       */
-    interface VanillaSerializer<T extends Model> {
+    interface VanillaSerializer<T extends BaseModel> {
 
         /**
           * The serializer rows. All rows should be instance
@@ -8753,7 +8753,7 @@ declare namespace Lucid {
         toJSON(): Array<any> | any;
     }
 
-    type Serializer<T extends Model> = VanillaSerializer<T>;
+    type Serializer<T extends BaseModel> = VanillaSerializer<T>;
 
     /**
       * The base model to share attributes with Lucid
@@ -8791,7 +8791,7 @@ declare namespace Lucid {
           * model, so that the methods added via traits are not impacting
           * other models.
           */
-        QueryBuilder: QueryBuilder;
+        QueryBuilder: QueryBuilder<BaseModel>;
 
         /**
           * Tells whether model instance is new or
@@ -8932,7 +8932,7 @@ declare namespace Lucid {
           *
           * @return {Class}
           */
-        Serializer : Serializer;
+        Serializer : Serializer<BaseModel>;
 
         /**
          * visible or hidden (one at a time) on your model
@@ -8968,7 +8968,7 @@ declare namespace Lucid {
           *
           * @returns {Class}
           */
-        resolveSerializer(): Serializer;
+        resolveSerializer(): Serializer<BaseModel>;
             
         /**
           * This method is executed when toJSON is called on a
@@ -9065,14 +9065,14 @@ declare namespace Lucid {
       * @class QueryBuilder
       * @constructor
       */
-    interface QueryBuilder extends Pick<Database.Builder, aggregates> {
+    interface QueryBuilder<T extends BaseModel> extends Pick<Database.Builder, aggregates> {
         /**
           * 
           * @param Model 
           * @param connection 
           * @return  
           */
-        new (Model : Model, connection : Database): QueryBuilder;
+        new (Model : T, connection : Database): QueryBuilder<T>;
             
         /**
           * Access of query formatter
@@ -9099,7 +9099,7 @@ declare namespace Lucid {
           * @param scopes? 
           * @return  
           */
-        ignoreScopes(scopes? : Array<string>): QueryBuilder;
+        ignoreScopes(scopes? : Array<string>): QueryBuilder<T>;
             
         /**
           * Execute the query builder chain by applying global scopes
@@ -9110,7 +9110,7 @@ declare namespace Lucid {
           * @return {Serializer} Instance of model serializer
           * @return  
           */
-        fetch(): Promise<Serializer>;
+        fetch(): Promise<Serializer<T>>;
             
         /**
           * Returns the first row from the database.
@@ -9118,10 +9118,10 @@ declare namespace Lucid {
           * @method first
           * @async
           * 
-          * @return {Model|Null}
+          * @return {T|Null}
           * @return  
           */
-        first(): Promise<Model>;
+        first(): Promise<T>;
             
         /**
           * Returns the latest row from the database.
@@ -9131,11 +9131,11 @@ declare namespace Lucid {
           * 
           * @param  {String} field
           * 
-          * @return {Model|Null}
+          * @return {T|Null}
           * @param field 
           * @return  
           */
-        last(field : string): Promise<Model>;
+        last(field : string): Promise<T>;
             
         /**
           * Throws an exception when unable to find the first
@@ -9144,12 +9144,12 @@ declare namespace Lucid {
           * @method firstOrFail
           * @async
           * 
-          * @return {Model}
+          * @return {T}
           * 
           * @throws {ModelNotFoundException} If unable to find first row
           * @return  
           */
-        firstOrFail(): Promise<Model>;
+        firstOrFail(): Promise<T>;
             
         /**
           * Paginate records, same as fetch but returns a
@@ -9166,7 +9166,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        paginate(page? : 1, limit? : 20): Promise<Serializer>;
+        paginate(page? : 1, limit? : 20): Promise<Serializer<T>>;
             
         /**
           * Bulk update data from query builder. This method will also
@@ -9175,13 +9175,13 @@ declare namespace Lucid {
           * @method update
           * @async
           * 
-          * @param  {Object|Model} valuesOrModelInstance
+          * @param  {Object|T} valuesOrModelInstance
           * 
           * @return {Promise}
           * @param valuesOrModelInstance 
           * @return  
           */
-        update(valuesOrModelInstance : Object | Model): Database.NumberResult;
+        update(valuesOrModelInstance : Object | T): Database.NumberResult;
             
         /**
           * Deletes the rows from the database.
@@ -9234,7 +9234,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        pickInverse(limit? : 1): Promise<Serializer>;
+        pickInverse(limit? : 1): Promise<Serializer<T>>;
             
         /**
           * Pick x number of rows from the database
@@ -9248,7 +9248,7 @@ declare namespace Lucid {
           * @param limit? 
           * @return  
           */
-        pick(limit? : 1): Promise<Serializer>;
+        pick(limit? : 1): Promise<Serializer<T>>;
             
         /**
           * Eagerload relationships when fetching the parent
@@ -9264,7 +9264,7 @@ declare namespace Lucid {
           * @param callback? 
           * @return  
           */
-        with(relation : string, callback? : Function): QueryBuilder;
+        with(relation : string, callback? : Function): QueryBuilder<T>;
             
         /**
           * Adds a check on there parent model to fetch rows
@@ -9283,7 +9283,7 @@ declare namespace Lucid {
           * @param value 
           * @return  
           */
-        has(relation : string, expression : string, value : any): QueryBuilder;
+        has(relation : string, expression : string, value : any): QueryBuilder<T>;
             
         /**
           * Similar to `has` but instead adds or clause
@@ -9300,7 +9300,7 @@ declare namespace Lucid {
           * @param value 
           * @return  
           */
-        orHas(relation : string, expression : string, value : any): QueryBuilder;
+        orHas(relation : string, expression : string, value : any): QueryBuilder<T>;
             
         /**
           * Adds a check on the parent model to fetch rows where
@@ -9314,7 +9314,7 @@ declare namespace Lucid {
           * @param relation 
           * @return  
           */
-        doesntHave(relation : string): QueryBuilder;
+        doesntHave(relation : string): QueryBuilder<T>;
             
         /**
           * Same as `doesntHave` but adds a `or` clause.
@@ -9327,7 +9327,7 @@ declare namespace Lucid {
           * @param relation 
           * @return  
           */
-        orDoesntHave(relation : string): QueryBuilder;
+        orDoesntHave(relation : string): QueryBuilder<T>;
             
         /**
           * Adds a query constraint just like has but gives you
@@ -9347,7 +9347,7 @@ declare namespace Lucid {
           * @param value 
           * @return  
           */
-        whereHas(relation : string, callback : Function, expression : string, value : string): QueryBuilder;
+        whereHas(relation : string, callback : Function, expression : string, value : string): QueryBuilder<T>;
             
         /**
           * Same as `whereHas` but with `or` clause
@@ -9366,7 +9366,7 @@ declare namespace Lucid {
           * @param value 
           * @return  
           */
-        orWhereHas(relation : string, callback : Function, expression : string, value : any): QueryBuilder;
+        orWhereHas(relation : string, callback : Function, expression : string, value : any): QueryBuilder<T>;
             
         /**
           * Opposite of `whereHas`
@@ -9381,7 +9381,7 @@ declare namespace Lucid {
           * @param callback 
           * @return  
           */
-        whereDoesntHave(relation : string, callback : Function): QueryBuilder;
+        whereDoesntHave(relation : string, callback : Function): QueryBuilder<T>;
             
         /**
           * Same as `whereDoesntHave` but with `or` clause
@@ -9396,7 +9396,7 @@ declare namespace Lucid {
           * @param callback 
           * @return  
           */
-        orWhereDoesntHave(relation : string, callback : Function): QueryBuilder;
+        orWhereDoesntHave(relation : string, callback : Function): QueryBuilder<T>;
             
         /**
           * Returns count of a relationship
@@ -9416,7 +9416,7 @@ declare namespace Lucid {
           * @param relation 
           * @param callback 
           */
-        withCount(relation : string, callback : Function): QueryBuilder;
+        withCount(relation : string, callback : Function): QueryBuilder<T>;
             
         /**
           * Define fields to be visible for a single
@@ -9432,7 +9432,7 @@ declare namespace Lucid {
           * @param fields 
           * @return  
           */
-        setVisible(fields : Array<string>): QueryBuilder;
+        setVisible(fields : Array<string>): QueryBuilder<T>;
             
         /**
           * Define fields to be hidden for a single
@@ -9448,7 +9448,7 @@ declare namespace Lucid {
           * @param fields 
           * @return  
           */
-        setHidden(fields : Array<string>): QueryBuilder;
+        setHidden(fields : Array<string>): QueryBuilder<T>;
         
         /**
           * Relations to be eagerloaded
@@ -10121,7 +10121,7 @@ declare namespace Lucid {
               * @return {Serializer}
               * @return  
               */
-            fetch(): Promise<Serializer>;
+            fetch(): Promise<Serializer<T>>;
                 
             /**
               * Groups related instances with their foriegn keys
@@ -10588,7 +10588,7 @@ declare namespace Lucid {
         }
     }
 
-    type QueryProxy = Overwrite<QueryBuilder, Overwrite<Database.QueryInterface, Database.Builder>>;
+    type QueryProxy<T extends BaseModel> = Overwrite<QueryBuilder<T>, Overwrite<Database.QueryInterface, Database.Builder>>;
     type ModelEvent = 
             "beforeCreate" |
             "afterCreate"  |
