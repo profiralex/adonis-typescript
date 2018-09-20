@@ -9110,7 +9110,7 @@ declare namespace Lucid {
           * @return {Serializer} Instance of model serializer
           * @return  
           */
-        fetch(): Promise<Serializer<T>>;
+        fetch(): Promise<T | Serializer<T> | null>;
             
         /**
           * Returns the first row from the database.
@@ -9121,7 +9121,7 @@ declare namespace Lucid {
           * @return {T|Null}
           * @return  
           */
-        first(): Promise<T>;
+        first(): Promise<T | null>;
             
         /**
           * Returns the latest row from the database.
@@ -9135,7 +9135,7 @@ declare namespace Lucid {
           * @param field 
           * @return  
           */
-        last(field : string): Promise<T>;
+        last(field : string): Promise<T | null>;
             
         /**
           * Throws an exception when unable to find the first
@@ -9203,7 +9203,7 @@ declare namespace Lucid {
           * @return {Array}
           * @return  
           */
-        ids<T>(): Promise<T[]>;
+        ids(): Promise<T[]>;
             
         /**
           * Returns a pair of lhs and rhs. This method will not
@@ -9549,7 +9549,7 @@ declare namespace Lucid {
           * @class BaseRelation
           * @constructor
           */
-        interface BaseRelation extends QueryProxy {
+        interface BaseRelation<T extends BaseModel, V extends BaseModel> extends QueryBuilder<V> {
             /**
               * 
               * @param parentInstance 
@@ -9558,13 +9558,13 @@ declare namespace Lucid {
               * @param foreignKey 
               * @return  
               */
-            new(parentInstance: Lucid.Model, RelatedModel: Lucid.Model, primaryKey?: string, foreignKey?: string): BaseRelation;
+            new(parentInstance: T, RelatedModel: V, primaryKey?: string, foreignKey?: string): BaseRelation<T, V>;
                 
             parentInstance : Lucid.Model
             RelatedModel   : Lucid.Model
             primaryKey     : string
             foreignKey     : string
-            relatedQuery   : QueryProxy
+            relatedQuery   : QueryProxy<V>
 
             /**
               * Define a custom eagerload query.
@@ -9627,12 +9627,9 @@ declare namespace Lucid {
               * @method load
               * @async
               * 
-              * @param  {String|Number}     value
-              * 
-              * @return {Model}
-              * @return  
+              * @return {V}
               */
-            load(): Model|Object;
+            load(): V|Object;
                 
             /**
               * Columnize dot notated column name using the formatter
@@ -9655,7 +9652,7 @@ declare namespace Lucid {
           * @class HasOne
           * @constructor
           */
-        interface HasOne extends BaseRelation {
+        interface HasOne<T extends BaseModel, V extends BaseModel> extends BaseRelation<T, V> {
             /**
               * Returns an array of values to be used for running
               * whereIn query when eagerloading relationships.
@@ -9694,7 +9691,7 @@ declare namespace Lucid {
               * @return {Model}
               * @return  
               */
-            fetch<T>(): Promise<T>;
+            fetch(): Promise<V | null>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -9730,15 +9727,15 @@ declare namespace Lucid {
               * 
               * @method save
               * 
-              * @param  {Object}  relatedInstance
-              * @param  {Object}  [trx]
+              * @param  {V}  relatedInstance
+              * @param  {Database.Transaction}  [trx]
               * 
               * @return {Promise}
               * @param relatedInstance 
               * @param trx? 
               * @return  
               */
-            save(relatedInstance :Object, trx? : Database.Transaction): Promise<boolean>;
+            save(relatedInstance :V, trx? : Database.Transaction): Promise<boolean>;
                 
             /**
               * Creates the new related instance model and persist
@@ -9757,7 +9754,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            create(payload : Object, trx? : Database.Transaction): Promise<Model>;
+            create(payload : Object, trx? : Database.Transaction): Promise<V>;
                 
             /**
               * istanbul ignore next
@@ -9777,17 +9774,7 @@ declare namespace Lucid {
           * @class BelongsTo
           * @constructor
           */
-        interface BelongsTo extends BaseRelation{
-            /**
-              * Returns the first row for the related model
-              * 
-              * @method first
-              * 
-              * @return {Object|Null}
-              * @return  
-              */
-            first<T>(): Promise<T>;
-                
+        interface BelongsTo<T extends BaseModel, V extends BaseModel> extends BaseRelation<T, V> {
             /**
               * Map values from model instances to an array. It is required
               * to make `whereIn` query when eagerloading results.
@@ -9825,7 +9812,7 @@ declare namespace Lucid {
               * @return {Object}
               * @return  
               */
-            fetch<T>(): Promise<T>;
+            fetch(): Promise<V | null>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -9889,7 +9876,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            associate(relatedInstance : Object, trx? : Database.Transaction): Promise<boolean>;
+            associate(relatedInstance : V, trx? : Database.Transaction): Promise<boolean>;
         }
 
         type pivotCallback = (Model:Model) => void;
@@ -9900,7 +9887,7 @@ declare namespace Lucid {
           * @class BelongsToMany
           * @constructor
           */
-        interface BelongsToMany extends BaseRelation {
+        interface BelongsToMany<T extends BaseModel, V extends BaseModel> extends BaseRelation<T, V> {
             /**
               * 
               * @param parentInstance 
@@ -9910,7 +9897,7 @@ declare namespace Lucid {
               * @param relatedPrimaryKey 
               * @param relatedForeignKey 
               */
-            new(parentInstance: Object, relatedModel: Object, primaryKey: string, foreignKey: string, relatedPrimaryKey: string, relatedForeignKey: string): BelongsToMany;
+            new(parentInstance: Object, relatedModel: Object, primaryKey: string, foreignKey: string, relatedPrimaryKey: string, relatedForeignKey: string): BelongsToMany<T, V>;
 
             relatedForeignKey: string
             relatedPrimaryKey: string
@@ -9934,20 +9921,6 @@ declare namespace Lucid {
               * @return {Array}
               */
             $pivotColumns : Array<string>;
-                
-            /**
-              * The colums to be selected from the related
-              * query
-              * 
-              * @method select
-              * 
-              * @param  {Array} columns
-              * 
-              * @chainable
-              * @param columns 
-              * @return  
-              */
-            select(...columns : Array<string> ): this;
                 
             /**
               * Define a fully qualified model to be used for
@@ -10099,7 +10072,7 @@ declare namespace Lucid {
               * @return {Promise}
               * @return  
               */
-            load(): Promise<Serializer>;
+            load(): Promise<Serializer<V>>;
                 
             /**
               * Fetch ids for the related model
@@ -10109,7 +10082,7 @@ declare namespace Lucid {
               * @return {Array}
               * @return  
               */
-            ids<T>(): Promise<T[]>;
+            ids(): Promise<V[]>;
                 
             /**
               * Execute the query and setup pivot values
@@ -10121,7 +10094,7 @@ declare namespace Lucid {
               * @return {Serializer}
               * @return  
               */
-            fetch(): Promise<Serializer<T>>;
+            fetch(): Promise<Serializer<V>>;
                 
             /**
               * Groups related instances with their foriegn keys
@@ -10147,7 +10120,7 @@ declare namespace Lucid {
               * @param selectFields 
               * @return  
               */
-            pivotQuery(selectFields? : true): QueryBuilder;
+            pivotQuery(selectFields? : true): QueryBuilder<any>;
                 
             /**
               * Adds a where clause to limit the select search
@@ -10330,7 +10303,7 @@ declare namespace Lucid {
           * @class HasMany
           * @constructor
           */
-        interface HasMany extends BaseRelation {  
+        interface HasMany<T extends BaseModel, V extends BaseModel> extends BaseRelation<T, V> {  
             /**
               * Returns an array of values to be used for running
               * whereIn query when eagerloading relationships.
@@ -10416,7 +10389,7 @@ declare namespace Lucid {
               * @param trx? 
               * @return  
               */
-            create(payload : Object, trx? : Database.Transaction): Promise<boolean>;
+            create(payload : Object, trx? : Database.Transaction): Promise<V>;
                 
             /**
               * Creates an array of model instances in parallel
@@ -10456,7 +10429,7 @@ declare namespace Lucid {
           * @class BelongsToMany
           * @constructor
           */
-        interface HasManyThrough extends BaseRelation {
+        interface HasManyThrough<T extends BaseModel, V extends BaseModel> extends BaseRelation<T, V> {
             /**
               * 
               * @param parentInstance 
@@ -10465,27 +10438,14 @@ declare namespace Lucid {
               * @param primaryKey 
               * @param foreignKey 
               */
-            new(parentInstance: Object, RelatedModel: Object, relatedMethod: string, primaryKey: string, foreignKey: string): HasManyThrough;
+            new(parentInstance: Object, RelatedModel: Object, relatedMethod: string, primaryKey: string, foreignKey: string): HasManyThrough<T,V>;
 
             _relatedModelRelation : Object
-            relatedQuery          : QueryProxy
+            relatedQuery          : QueryProxy<V>
             _relatedFields        : Array<string>
             _throughFields        : Array<string>
             _fields               : Array<string>
 
-            /**
-              * Select fields from the primary table
-              * 
-              * @method select
-              * 
-              * @param  {Array} columns
-              * 
-              * @chainable
-              * @param columns 
-              * @return  
-              */
-            select(...columns: string[]): this;
-                
             /**
               * Select fields from the through table.
               * 
@@ -10497,7 +10457,7 @@ declare namespace Lucid {
               * @param columns 
               * @return  
               */
-            selectThrough(...columns: string[]): this;
+            selectThrough(...columns: string[]): QueryBuilder<any>;
                 
             /**
               * Select fields from the related table
@@ -10510,7 +10470,7 @@ declare namespace Lucid {
               * @param columns 
               * @return  
               */
-            selectRelated(...columns: string[]): this;
+            selectRelated(...columns: string[]): QueryBuilder<any>;
                 
             /**
               * Returns an array of values to be used for running
@@ -10828,7 +10788,7 @@ declare namespace Lucid {
           * @param foreignKey 
           * @return  
           */
-        hasOne(relatedModel : string | Model, primaryKey? : string, foreignKey? : string): Relations.HasOne;
+        hasOne<T extends Model>(relatedModel : string | T, primaryKey? : string, foreignKey? : string): Relations.HasOne<Model, T>;
             
         /**
           * Returns an instance of @ref('HasMany') relation
@@ -10845,7 +10805,7 @@ declare namespace Lucid {
           * @param foreignKey 
           * @return  
           */
-        hasMany(relatedModel : string | Model, primaryKey? : string, foreignKey? : string): Relations.HasMany;
+        hasMany<T extends Model>(relatedModel : string | Model, primaryKey? : string, foreignKey? : string): Relations.HasMany<Model, T>;
             
         /**
           * Returns an instance of @ref('BelongsTo') relation
@@ -10862,7 +10822,7 @@ declare namespace Lucid {
           * @param foreignKey 
           * @return  
           */
-        belongsTo(relatedModel : string | Model, primaryKey? : string, foreignKey? : string): Relations.BelongsTo;
+        belongsTo<T extends Model>(relatedModel : string | Model, primaryKey? : string, foreignKey? : string): Relations.BelongsTo<Model, T>;
             
         /**
           * Returns an instance of @ref('BelongsToMany') relation
@@ -10883,7 +10843,7 @@ declare namespace Lucid {
           * @param relatedPrimaryKey 
           * @return  
           */
-        belongsToMany(relatedModel : Model | string, foreignKey? : string, relatedForeignKey? : string, primaryKey? : string, relatedPrimaryKey? : string): Relations.BelongsToMany;
+        belongsToMany<T extends Model>(relatedModel : Model | string, foreignKey? : string, relatedForeignKey? : string, primaryKey? : string, relatedPrimaryKey? : string): Relations.BelongsToMany<Model, T>;
             
         /**
           * Returns instance of @ref('HasManyThrough')
@@ -10902,7 +10862,7 @@ declare namespace Lucid {
           * @param foreignKey 
           * @return  
           */
-        manyThrough(relatedModel : Model | string, relatedMethod : string, primaryKey? : string, foreignKey? : string): Relations.HasManyThrough;
+        manyThrough<T extends Model>(relatedModel : Model | string, relatedMethod : string, primaryKey? : string, foreignKey? : string): Relations.HasManyThrough<Model, T>;
             
         /**
           * Reload the model instance in memory. Some may
@@ -11038,7 +10998,7 @@ declare namespace Lucid {
           *
           * @static
           */
-        query(): QueryProxy;
+        query<T extends Model>(this: { new(): T }): QueryProxy<T>;
             
         /**
           * Returns a query builder without any global scopes
@@ -11047,7 +11007,7 @@ declare namespace Lucid {
           *
           * @return {QueryBuilder}
           */
-        queryWithOutScopes(): QueryProxy;
+        queryWithOutScopes<T extends Model>(this: { new(): T }): QueryProxy<T>;
             
         /**
           * Define a query macro to be added to query builder.
@@ -11135,7 +11095,7 @@ declare namespace Lucid {
           *
           * @return {Model} Model instance is returned
           */
-        create(payload : Object, trx? : Database.Transaction): Promise<Model>;
+        create<T extends Model>(this: { new(): T }, payload : Object, trx? : Database.Transaction): Promise<T>;
             
         /**
           * Returns the latest row from the database.
@@ -11147,7 +11107,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        last(field? : string): Promise<Model>;
+        last<T extends Model>(this: { new(): T }, field? : string): Promise<T>;
             
         /**
           * Creates many instances of model in parallel.
@@ -11161,7 +11121,7 @@ declare namespace Lucid {
           *
           * @throws {InvalidArgumentException} If payloadArray is not an array
           */
-        createMany(payloadArray : Array<Object>, trx? : Database.Transaction): Promise<Array<Model>>;	
+        createMany<T extends Model>(this: { new(): T }, payloadArray : Array<Object>, trx? : Database.Transaction): Promise<Array<T>>;	
 
         /**
           * Deletes all rows of this model (truncate table).
@@ -11182,7 +11142,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        find(value : string | number): Promise<Model>;
+        find<T extends Model>(this: { new(): T }, value : string | number): Promise<T>;
             
         /**
           * Find a row using the primary key or
@@ -11197,7 +11157,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        findOrFail(value : string | number): Promise<Model>;
+        findOrFail<T extends Model>(this: { new(): T }, value : string | number): Promise<T>;
             
         /**
           * Find a model instance using key/value pair
@@ -11210,7 +11170,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        findBy(key : string, value : string | number): Promise<Model>;
+        findBy<T extends Model>(this: { new(): T }, key : string, value : string | number): Promise<T>;
             
         /**
           * Find a model instance using key/value pair or
@@ -11226,7 +11186,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        findByOrFail(key : string, value : string | number): Promise<Model>;
+        findByOrFail<T extends Model>(this: { new(): T }, key : string, value : string | number): Promise<T>;
             
         /**
           * Returns the first row. This method will add orderBy asc
@@ -11237,7 +11197,7 @@ declare namespace Lucid {
           *
           * @return {Model|Null}
           */
-        first(): Promise<Model>;
+        first<T extends Model>(this: { new(): T }): Promise<T>;
             
         /**
           * Returns the first row or throw an exception.
@@ -11250,7 +11210,7 @@ declare namespace Lucid {
           *
           * @throws {ModelNotFoundException} If unable to find row
           */
-        firstOrFail(): Promise<Model>;
+        firstOrFail<T extends Model>(this: { new(): T }): Promise<T>;
             
         /**
           * Find a row or create a new row when it doesn't
@@ -11265,7 +11225,7 @@ declare namespace Lucid {
           *
           * @return {Model}
           */
-        findOrCreate(whereClause : Object, payload : Object, trx? : Database.Transaction): Promise<Model>;
+        findOrCreate<T extends Model>(this: { new(): T }, whereClause : Object, payload : Object, trx? : Database.Transaction): Promise<T>;
             
         /**
           * Find row from database or returns an instance of
@@ -11278,7 +11238,7 @@ declare namespace Lucid {
           *
           * @return {Model}
           */
-        findOrNew(whereClause : Object, payload : Object): Promise<Model>;
+        findOrNew<T extends Model>(this: { new(): T }, whereClause : Object, payload : Object): Promise<T>;
             
         /**
           * Fetch everything from the database
@@ -11288,7 +11248,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        all(): Promise<Serializer>;
+        all<T extends Model>(this: { new(): T }): Promise<Serializer<T>>;
             
         /**
           * Select x number of rows
@@ -11300,7 +11260,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        pick(limit? : 1): Promise<Serializer>;
+        pick<T extends Model>(this: { new(): T }, limit? : 1): Promise<Serializer<T>>;
             
         /**
           * Select x number of rows in inverse
@@ -11312,7 +11272,7 @@ declare namespace Lucid {
           *
           * @return {Collection}
           */
-        pickInverse(limit? : 1): Promise<Serializer>;
+        pickInverse<T extends Model>(this: { new(): T }, limit? : 1): Promise<Serializer<T>>;
 
         /**
           * Returns an array of ids.
