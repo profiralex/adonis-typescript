@@ -6133,7 +6133,7 @@ interface DatabaseManager {
   * @constructor
   * @group Database
   */
-interface Database extends DatabaseManager, Database.Builder {
+interface Database extends DatabaseManager, Database.Builder<any> {
     /**
       * The schema builder instance to be used
       * for creating database schema.
@@ -6728,7 +6728,7 @@ declare namespace Database {
         now(): Raw;
     }
 
-    interface Builder {
+    interface Builder<T> {
         //MonkeyPatch.js
         returning(column: string | string[]): this
         from(table: string): this
@@ -6736,14 +6736,14 @@ declare namespace Database {
         into(table: string): this
         withOutPrefix(): this
 
-        select(column: string): this
-        select(...columns: string[]): this
+        select<T>(column: string): Builder<T>
+        select<T>(...columns: string[]): Builder<T>
 
         where(column: string, value: any): this
         where(column: string, operator: string, value: any): this
         where(condition: Object): this
         where(callback: QueryCallback): this
-        where(subquery: Builder): this
+        where(subquery: Builder<T>): this
         whereNot(column: string, value: any): this
         whereNot(column: string, operator: string, value: any): this
         whereNot(condition: Object): this
@@ -6759,6 +6759,8 @@ declare namespace Database {
         whereBetween(column: string, params: number[]): this
         whereNotBetween(column: string, params: number[]): this
         whereRaw(exp: string, params?: Database.SimpleAny[]): this
+
+        andWhere(column: string, value: any): this
 
         innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
         innerJoin(table: string, callback: Function): this
@@ -6830,9 +6832,9 @@ declare namespace Database {
         getAvg(column: string): NumberResult
         getAvgDistinct(column: string): NumberResult
 
-        last<T>(field?: string): Promise<T>;
-        pluck<T>(colum: string): Promise<T[]>
-        first<T>(): Promise<T>
+        last(field?: string): Promise<T>;
+        pluck(colum: string): Promise<T[]>
+        first(): Promise<T>
         map<T, R>(callback: (row: T | Object) => R): Promise<R[]> 
         reduce<T, S>(reducer: (acc: S, row: T) => S, initValue: S): Promise<S>
 
@@ -9065,7 +9067,7 @@ declare namespace Lucid {
       * @class QueryBuilder
       * @constructor
       */
-    interface QueryBuilder<T extends BaseModel> extends Pick<Database.Builder, aggregates> {
+    interface QueryBuilder<T extends BaseModel> extends Pick<Database.Builder<T>, aggregates> {
         /**
           * 
           * @param Model 
@@ -9499,7 +9501,7 @@ declare namespace Lucid {
         /**
           * Reference to query builder with pre selected table
           */
-        query: Database.Builder;
+        query: Database.Builder<T>;
     }
 
     namespace Relations {
@@ -9549,7 +9551,7 @@ declare namespace Lucid {
           * @class BaseRelation
           * @constructor
           */
-        interface BaseRelation<T extends BaseModel, V extends BaseModel> extends QueryBuilder<V> {
+        interface BaseRelation<T extends BaseModel, V extends BaseModel> extends QueryProxy<V> {
             /**
               * 
               * @param parentInstance 
@@ -9705,7 +9707,7 @@ declare namespace Lucid {
               * @param count 
               * @return  
               */
-            relatedWhere(count : boolean): Database.Builder;
+            relatedWhere(count : boolean): Database.Builder<T>;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -9828,7 +9830,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Builder;
+            relatedWhere(count : boolean, counter : number): Database.Builder<any>;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -10136,7 +10138,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Builder;
+            relatedWhere(count : boolean, counter : number): Database.Builder<any>;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -10209,7 +10211,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            detach(references : Array<String>, trx? : Database.Transaction): number;
+            detach(references : Number|String|Array<String>, trx? : Database.Transaction): number;
                 
             /**
               * Calls `detach` and `attach` together.
@@ -10346,7 +10348,7 @@ declare namespace Lucid {
               * @param counter 
               * @return  
               */
-            relatedWhere(count : boolean, counter : number): Database.Builder;
+            relatedWhere(count : boolean, counter : number): Database.Builder<any>;
                 
             /**
               * Adds `on` clause to the innerjoin context. This
@@ -10524,7 +10526,7 @@ declare namespace Lucid {
               * @param count 
               * @return  
               */
-            relatedWhere(count : boolean): Database.Builder;
+            relatedWhere(count : boolean): Database.Builder<any>;
                 
             /**
               * istanbul ignore next
@@ -10548,7 +10550,7 @@ declare namespace Lucid {
         }
     }
 
-    type QueryProxy<T extends BaseModel> = Overwrite<QueryBuilder<T>, Overwrite<Database.QueryInterface, Database.Builder>>;
+    type QueryProxy<T extends BaseModel> = Overwrite<QueryBuilder<T>, Overwrite<Database.QueryInterface, Database.Builder<T>>>;
     type ModelEvent = 
             "beforeCreate" |
             "afterCreate"  |
@@ -11469,7 +11471,7 @@ declare namespace Lucid {
           * @param connection 
           * @return  
           */
-        query(table : string, connection : Database): Database.Builder;
+        query(table : string, connection : Database): Database.Builder<any>;
             
         /**
           * Save the model instance to the database.
