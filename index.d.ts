@@ -10576,7 +10576,7 @@ declare namespace Lucid {
       */
     interface Model extends BaseModel {
         new(): Model;
-        [property: string]: any;
+        [property: string]: Object;
 
         /**
           * Returns an object of values dirty after persisting to
