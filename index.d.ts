@@ -3133,6 +3133,7 @@ declare namespace Http {
         new (req : Object, res : Object): Context;
         
         auth       : Auth;
+        antl       : Antl;
         params     : WorkInProgress;
         req        : http.IncomingMessage;
         res        : http.ServerResponse;
@@ -12774,11 +12775,11 @@ interface Antl {
 	 *   .formatMessage('Total { total, number, usd }', { total: 20 }, [formats.pass('usd', 'number')])
 	 * ```
 	 * @param message 
-	 * @param values 
+	 * @param values?
 	 * @param formats? 
 	 * @return  
 	 */
-	formatMessage(message : string, values : Object, formats? : Object | Array<any>): string;
+	formatMessage(message : string, values? : Object, formats? : Object | Array<any>): string;
 		
 	/**
 	 * Returns raw message for a given key
