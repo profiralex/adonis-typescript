@@ -10759,7 +10759,7 @@ declare namespace Lucid {
           * @param callback 
           * @return  
           */
-        load(relation : string, callback : Function): Promise<void>;
+        load(relation : string, callback? : Function): Promise<void>;
             
         /**
           * Just like @ref('Model.load') but instead loads multiple relations for a
