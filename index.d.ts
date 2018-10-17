@@ -6762,6 +6762,7 @@ declare namespace Database {
         whereRaw(exp: string, params?: Database.SimpleAny[]): this
 
         andWhere(column: string, value: any): this
+        andWhere(column: string, operator: string, value: any): this
 
         innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
         innerJoin(table: string, callback: Function): this
