@@ -10168,7 +10168,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            attach(references : Number | String | Array<String>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<Object>;
+            attach(references : Number | String | Array<String>|Array<number>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<Object>;
                 
             /**
               * Delete related model rows in bulk and also detach
@@ -10213,7 +10213,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            detach(references : Number|String|Array<String>, trx? : Database.Transaction): number;
+            detach(references : Number|String|Array<String>|Array<number>, trx? : Database.Transaction): number;
                 
             /**
               * Calls `detach` and `attach` together.
@@ -10229,7 +10229,7 @@ declare namespace Lucid {
               * @param trx 
               * @return  
               */
-            sync(references : Number|String|Array<String>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<void>;
+            sync(references : Number|String|Array<String>|Array<number>, pivotCallback? : pivotCallback, trx? : Database.Transaction): Promise<void>;
                 
             /**
               * Save the related model instance and setup the relationship
