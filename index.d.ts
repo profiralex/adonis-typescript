@@ -6764,6 +6764,9 @@ declare namespace Database {
         andWhere(column: string, value: any): this
         andWhere(column: string, operator: string, value: any): this
 
+        orWhere(column: string, value: any): this
+        orWhere(column: string, operator: string, value: any): this
+
         innerJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
         innerJoin(table: string, callback: Function): this
         leftJoin(table: string, leftSideCondition: string, rightSideCondition: string): this
