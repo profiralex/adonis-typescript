@@ -6848,6 +6848,8 @@ declare namespace Database {
 
         raw<T>(expression: string, params?: Database.SimpleAny[]): Promise<T[]>
 
+        with(relation: string): this;
+
         asCallback<T>(callback: (err: Object, rows: T[]) => void): void
         stream(callback: any): Object
         on(event: string, callback: Function): this
