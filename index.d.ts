@@ -8880,7 +8880,7 @@ declare namespace Lucid {
           * @return {Object}
           * @return  
           */
-        toJSON(): Object;
+        toJSON(): any;
             
         /**
           * The attributes to be considered as dates. By default
