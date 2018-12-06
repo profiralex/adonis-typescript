@@ -595,7 +595,7 @@ interface Event {
      * @param listeners 
      * @return  
      */
-    on(event : string, listeners : EventListener): void;
+    on(event : string, listeners : EventListener | string | string[]): void;
         
     /**
      * Bind listener for any event
